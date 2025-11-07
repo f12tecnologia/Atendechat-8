@@ -101,6 +101,30 @@ class EvolutionApiService {
     }
   }
 
+  async getQrCode(instanceName: string): Promise<any> {
+    try {
+      const response = await this.client.get(
+        `/instance/qrcode/${instanceName}`
+      );
+      return response.data;
+    } catch (error) {
+      logger.error("Evolution API - Error getting QR code:", error);
+      throw new AppError("ERR_EVOLUTION_API_GET_QRCODE");
+    }
+  }
+
+  async getInstanceStatus(instanceName: string): Promise<any> {
+    try {
+      const response = await this.client.get(
+        `/instance/connectionState/${instanceName}`
+      );
+      return response.data;
+    } catch (error) {
+      logger.error("Evolution API - Error getting instance status:", error);
+      throw new AppError("ERR_EVOLUTION_API_GET_STATUS");
+    }
+  }
+
   async fetchInstances(): Promise<any> {
     try {
       const response = await this.client.get("/instance/fetchInstances");

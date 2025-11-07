@@ -91,6 +91,10 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
   const [prompts, setPrompts] = useState([]);
   const [integrations, setIntegrations] = useState([]);
   const [selectedIntegration, setSelectedIntegration] = useState(null);
+  const [provider, setProvider] = useState("baileys");
+  const [evolutionIntegrations, setEvolutionIntegrations] = useState([]);
+  const [selectedEvolutionIntegration, setSelectedEvolutionIntegration] = useState(null);
+  const [qrCode, setQrCode] = useState(null);
   
     useEffect(() => {
       const fetchSession = async () => {
@@ -123,6 +127,11 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
         const {data: dataIntegration} = await api.get("/queueIntegration");
         setIntegrations(dataIntegration.queueIntegrations);
 
+        const {data: evolutionData} = await api.get("/api-integrations", {
+          params: { type: "evolution" }
+        });
+        setEvolutionIntegrations(evolutionData.apiIntegrations || []);
+
       } catch (err) {
         toastError(err);
       }
@@ -152,11 +161,29 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
     try {
       if (whatsAppId) {
         await api.put(`/whatsapp/${whatsAppId}`, whatsappData);
+        toast.success(i18n.t("whatsappModal.success"));
+        handleClose();
       } else {
-        await api.post("/whatsapp", whatsappData);
+        if (provider === "evolution") {
+          if (!selectedEvolutionIntegration) {
+            toast.error("Selecione uma integração Evolution API antes de continuar");
+            return;
+          }
+          const evolutionData = {
+            ...whatsappData,
+            apiIntegrationId: selectedEvolutionIntegration
+          };
+          const { data } = await api.post("/whatsapp/evolution", evolutionData);
+          if (data.qrcode) {
+            setQrCode(data.qrcode);
+          }
+          toast.success("Conexão Evolution API criada! Escaneie o QR Code.");
+        } else {
+          await api.post("/whatsapp", whatsappData);
+          toast.success(i18n.t("whatsappModal.success"));
+          handleClose();
+        }
       }
-      toast.success(i18n.t("whatsappModal.success"));
-      handleClose();
     } catch (err) {
       toastError(err);
     }
@@ -179,7 +206,7 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
   const handleClose = () => {
     onClose();
     setWhatsApp(initialState);
-	  setSelectedQueueId(null);
+          setSelectedQueueId(null);
     setSelectedQueueIds([]);
   };
 
@@ -241,6 +268,48 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                     </Grid>
                   </Grid>
                 </div>
+                
+                {!whatsAppId && (
+                  <>
+                    <FormControl margin="dense" variant="outlined" fullWidth>
+                      <InputLabel>Tipo de Conexão</InputLabel>
+                      <Select
+                        value={provider}
+                        onChange={(e) => setProvider(e.target.value)}
+                        label="Tipo de Conexão"
+                      >
+                        <MenuItem value="baileys">WhatsApp (Baileys)</MenuItem>
+                        <MenuItem value="evolution">Evolution API</MenuItem>
+                      </Select>
+                    </FormControl>
+
+                    {provider === "evolution" && (
+                      <FormControl margin="dense" variant="outlined" fullWidth>
+                        <InputLabel>Integração Evolution API</InputLabel>
+                        <Select
+                          value={selectedEvolutionIntegration || ""}
+                          onChange={(e) => setSelectedEvolutionIntegration(e.target.value)}
+                          label="Integração Evolution API"
+                        >
+                          {evolutionIntegrations.map((integration) => (
+                            <MenuItem key={integration.id} value={integration.id}>
+                              {integration.name}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    )}
+
+                    {qrCode && (
+                      <div style={{ textAlign: "center", margin: "20px 0" }}>
+                        <h3>QR Code Evolution API</h3>
+                        <img src={qrCode} alt="QR Code" style={{ maxWidth: "300px" }} />
+                        <p>Escaneie este QR Code com o WhatsApp para conectar</p>
+                      </div>
+                    )}
+                  </>
+                )}
+                
                 <div>
                   <Field
                     as={TextField}
@@ -411,7 +480,7 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                 <div>
                   <h3>{i18n.t("whatsappModal.form.queueRedirection")}</h3>
                   <p>{i18n.t("whatsappModal.form.queueRedirectionDesc")}</p>
-				<Grid container spacing={2}>
+                                <Grid container spacing={2}>
                   <Grid item sm={6} >
                     <Field
                       fullWidth

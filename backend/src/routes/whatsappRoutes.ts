@@ -9,6 +9,8 @@ whatsappRoutes.get("/whatsapp/", isAuth, WhatsAppController.index);
 
 whatsappRoutes.post("/whatsapp/", isAuth, WhatsAppController.store);
 
+whatsappRoutes.post("/whatsapp/evolution", isAuth, WhatsAppController.storeEvolution);
+
 whatsappRoutes.get("/whatsapp/:whatsappId", isAuth, WhatsAppController.show);
 
 whatsappRoutes.put("/whatsapp/:whatsappId", isAuth, WhatsAppController.update);

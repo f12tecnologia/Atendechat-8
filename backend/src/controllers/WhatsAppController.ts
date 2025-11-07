@@ -4,6 +4,7 @@ import { removeWbot } from "../libs/wbot";
 import { StartWhatsAppSession } from "../services/WbotServices/StartWhatsAppSession";
 
 import CreateWhatsAppService from "../services/WhatsappService/CreateWhatsAppService";
+import CreateEvolutionWhatsAppService from "../services/WhatsappService/CreateEvolutionWhatsAppService";
 import DeleteWhatsAppService from "../services/WhatsappService/DeleteWhatsAppService";
 import ListWhatsAppsService from "../services/WhatsappService/ListWhatsAppsService";
 import ShowWhatsAppService from "../services/WhatsappService/ShowWhatsAppService";
@@ -56,8 +57,8 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
     token,
     //timeSendQueue,
     //sendIdQueue,
-	  transferQueueId,
-	  timeToTransfer,
+          transferQueueId,
+          timeToTransfer,
     promptId,
     maxUseBotQueues,
     timeUseBotQueues,
@@ -79,8 +80,8 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
     token,
     //timeSendQueue,
     //sendIdQueue,
-	  transferQueueId,
-	  timeToTransfer,	
+          transferQueueId,
+          timeToTransfer,       
     promptId,
     maxUseBotQueues,
     timeUseBotQueues,
@@ -105,6 +106,47 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
   }
 
   return res.status(200).json(whatsapp);
+};
+
+export const storeEvolution = async (req: Request, res: Response): Promise<Response> => {
+  const {
+    name,
+    isDefault,
+    greetingMessage,
+    complationMessage,
+    outOfHoursMessage,
+    ratingMessage,
+    queueIds,
+    apiIntegrationId
+  }: WhatsappData & { apiIntegrationId: number } = req.body;
+  const { companyId } = req.user;
+
+  const { whatsapp, qrcode, oldDefaultWhatsapp } = await CreateEvolutionWhatsAppService({
+    name,
+    isDefault,
+    greetingMessage,
+    complationMessage,
+    outOfHoursMessage,
+    ratingMessage,
+    queueIds,
+    companyId,
+    apiIntegrationId
+  });
+
+  const io = getIO();
+  io.to(`company-${companyId}-mainchannel`).emit(`company-${companyId}-whatsapp`, {
+    action: "update",
+    whatsapp
+  });
+
+  if (oldDefaultWhatsapp) {
+    io.to(`company-${companyId}-mainchannel`).emit(`company-${companyId}-whatsapp`, {
+      action: "update",
+      whatsapp: oldDefaultWhatsapp
+    });
+  }
+
+  return res.status(200).json({ whatsapp, qrcode });
 };
 
 export const show = async (req: Request, res: Response): Promise<Response> => {

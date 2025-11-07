@@ -490,11 +490,6 @@ const MainListItems = (props) => {
                   primary={i18n.t("mainDrawer.listItems.queueIntegration")}
                   icon={<DeviceHubOutlined />}
                 />
-                <ListItemLink
-                  to="/api-integrations"
-                  primary={i18n.t("mainDrawer.listItems.apiIntegrations")}
-                  icon={<DeviceHubOutlined />}
-                />
               </>
             )}
             <ListItemLink
