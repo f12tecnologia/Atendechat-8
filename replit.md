@@ -52,25 +52,36 @@ Atendechat is a comprehensive customer support platform integrated with WhatsApp
 ## Running the Application
 
 ### Development
-The frontend workflow is configured and running automatically.
+Ambos os workflows estão configurados e rodando automaticamente:
+- ✅ **Frontend**: Rodando automaticamente na porta 5000
+- ✅ **Backend**: Rodando automaticamente na porta 8080
+- ✅ **Redis**: Rodando em background na porta 6379
 
-To manually start components:
+Para reiniciar manualmente se necessário:
 ```bash
-# Frontend (already running as workflow)
-cd frontend && npm start
+# Reiniciar workflow do frontend
+# (Use a interface do Replit ou restart_workflow tool)
 
-# Backend (start manually if needed)
-cd backend && npm start
+# Reiniciar workflow do backend
+# (Use a interface do Replit ou restart_workflow tool)
+
+# Reiniciar Redis manualmente
+redis-server --daemonize yes --port 6379
 ```
 
 ### Database
 The PostgreSQL database is managed by Replit and includes:
-- All migrations applied successfully
-- Default company and user seeded
-- Default settings configured
+- ✅ All 145+ migrations applied successfully
+- ✅ Default company (Empresa 1) created
+- ✅ Default user (Admin) seeded
+- ✅ Default settings configured
 
-**Default Credentials** (from seeds):
-- Check database seeds in `backend/src/database/seeds/` for default user credentials
+**Credenciais Padrão de Acesso:**
+- 📧 **Email**: `admin@admin.com`
+- 🔑 **Senha**: `123456`
+- 👤 **Nome**: Admin
+- 🏢 **Empresa**: Empresa 1
+- 🎫 **Perfil**: Super Admin
 
 ## Key Features
 - Multi-tenant support with company separation
@@ -87,16 +98,18 @@ The PostgreSQL database is managed by Replit and includes:
 - Analytics dashboard
 
 ## Recent Changes
-**November 7, 2025** - Initial Replit Setup
-- Installed Node.js v20 and all dependencies
-- Configured PostgreSQL database with SSL support
-- Installed and configured Redis for Bull queues
-- Updated database configuration for Neon PostgreSQL
-- Applied all migrations (117 migrations)
-- Seeded default data
-- Configured frontend for port 5000 with host bypass
-- Set up frontend workflow on webview port 5000
-- Updated browserslist database
+**November 7, 2025** - Initial Replit Setup Completo
+- ✅ Installed Node.js v20 and all dependencies
+- ✅ Configured PostgreSQL database with SSL support
+- ✅ Installed and configured Redis for Bull queues
+- ✅ Updated database configuration for Neon PostgreSQL
+- ✅ Applied all migrations (145+ migrations including latest)
+- ✅ Seeded default data successfully
+- ✅ Configured frontend for port 5000 with host bypass
+- ✅ Set up frontend workflow on webview port 5000
+- ✅ Created backend workflow on port 8080
+- ✅ Updated browserslist database
+- ✅ Both frontend and backend running successfully
 
 ## Deployment
 The application is configured for VM deployment with the following setup:
