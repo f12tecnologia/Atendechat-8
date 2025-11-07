@@ -11,4 +11,7 @@ apiIntegrationRoutes.get("/api-integrations/:integrationId", isAuth, ApiIntegrat
 apiIntegrationRoutes.put("/api-integrations/:integrationId", isAuth, ApiIntegrationController.update);
 apiIntegrationRoutes.delete("/api-integrations/:integrationId", isAuth, ApiIntegrationController.remove);
 
+// Webhook endpoint (sem autenticação - chamado pela Evolution API)
+apiIntegrationRoutes.post("/api-integrations/webhook/:companyId", ApiIntegrationController.webhook);
+
 export default apiIntegrationRoutes;

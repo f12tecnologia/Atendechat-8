@@ -4,6 +4,8 @@ import ListApiIntegrationsService from "../services/ApiIntegrationServices/ListA
 import ShowApiIntegrationService from "../services/ApiIntegrationServices/ShowApiIntegrationService";
 import UpdateApiIntegrationService from "../services/ApiIntegrationServices/UpdateApiIntegrationService";
 import DeleteApiIntegrationService from "../services/ApiIntegrationServices/DeleteApiIntegrationService";
+import ProcessEvolutionWebhookService from "../services/EvolutionApiService/ProcessEvolutionWebhookService";
+import { logger } from "../utils/logger";
 
 export const index = async (req: Request, res: Response): Promise<Response> => {
   const { companyId } = req.user;
@@ -89,4 +91,20 @@ export const remove = async (req: Request, res: Response): Promise<Response> => 
   });
 
   return res.status(200).json({ message: "Integration deleted" });
+};
+
+export const webhook = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const webhookData = req.body;
+    const { companyId } = req.params;
+
+    logger.info(`Evolution API webhook received: ${JSON.stringify(webhookData)}`);
+
+    await ProcessEvolutionWebhookService(webhookData, parseInt(companyId, 10));
+
+    return res.status(200).json({ message: "Webhook processed successfully" });
+  } catch (error) {
+    logger.error(`Error processing webhook: ${error}`);
+    return res.status(500).json({ error: "Error processing webhook" });
+  }
 };
