@@ -14,6 +14,10 @@ externalPort = 80
 localPort = 6379
 externalPort = 80
 
+[[ports]]
+localPort = 34075
+externalPort = 3000
+
 [workflows]
 runButton = "Project"
 
@@ -37,3 +41,8 @@ waitForPort = 5000
 
 [workflows.workflow.metadata]
 outputType = "webview"
+
+[deployment]
+deploymentTarget = "vm"
+run = ["bash", "-c", "redis-server --daemonize yes --port 6379 && cd backend && npm start & cd frontend && npx serve -s build -l 5000"]
+build = ["bash", "-c", "cd backend && npm run build && cd ../frontend && npm run build"]

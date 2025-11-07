@@ -98,8 +98,41 @@ The PostgreSQL database is managed by Replit and includes:
 - Set up frontend workflow on webview port 5000
 - Updated browserslist database
 
-## Notes
+## Deployment
+The application is configured for VM deployment with the following setup:
+- **Build**: Compiles both backend TypeScript and frontend React app
+- **Run**: Starts Redis, backend server, and serves frontend on port 5000
+- The deployment uses a VM instance to maintain state for the queue system and WhatsApp sessions
+
+## Important Notes
+
+### Application Access
+- The frontend is accessible through the webview on port 5000
+- Login page should be available at the root URL
+- Default credentials can be found in the database seeds
+
+### Backend Startup
+The backend server needs to be started manually or configured in production:
+```bash
+cd backend && npm start
+```
+The backend runs on port 8080 and handles:
+- WhatsApp message processing
+- Ticket management
+- Queue processing (via Bull/Redis)
+- Real-time WebSocket connections
+
+### Technical Considerations
 - This project uses older versions of some packages (React 17, Material-UI v4, Sequelize v5)
 - Some npm vulnerabilities exist due to legacy dependencies
 - Redis is required for the queue system to function
-- The backend must be started separately from the frontend workflow
+- The frontend has compiled successfully with only ESLint warnings (unused imports)
+- SSL is configured for PostgreSQL connection to Neon database
+- WhatsApp integration requires additional setup and authentication with WhatsApp Business API
+
+### Next Steps for Full Functionality
+1. Start the backend server manually
+2. Configure WhatsApp connection credentials
+3. Set up email SMTP settings for notifications
+4. Configure payment gateway if using subscription features
+5. Update JWT secrets for production use
