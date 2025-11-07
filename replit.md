@@ -101,6 +101,16 @@ The PostgreSQL database is managed by Replit and includes:
 - **Multi-channel Support** - Support for multiple messaging channels through unified interface
 
 ## Recent Changes
+**November 7, 2025** - Evolution API Webhook Integration
+- ✅ Created ProcessEvolutionWebhookService to receive and process Evolution API webhooks
+- ✅ Webhook endpoint: `/api-integrations/webhook/:companyId`
+- ✅ Automatic creation of contacts from Evolution API messages
+- ✅ Automatic creation/update of tickets in Atendimento screen
+- ✅ Support for text, image, video, audio, document, and sticker messages
+- ✅ Integration with existing message system (CreateMessageService)
+- ✅ Real-time Socket.IO events for frontend updates
+- ✅ Proper logging and error handling
+
 **November 7, 2025** - API Integrations System Implementation
 - ✅ Created `ApiIntegration` model and database migration
 - ✅ Implemented full CRUD services for API integrations
@@ -112,6 +122,7 @@ The PostgreSQL database is managed by Replit and includes:
 - ✅ Added search and pagination support
 - ✅ Added Portuguese translations for all new components
 - ✅ Added menu item "Integrações de API" in admin section
+- ✅ Fixed ApiIntegration model registration in Sequelize
 
 **November 7, 2025** - Initial Replit Setup Completo
 - ✅ Installed Node.js v20 and all dependencies
