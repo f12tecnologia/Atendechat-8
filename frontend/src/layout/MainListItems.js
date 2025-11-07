@@ -293,14 +293,14 @@ const MainListItems = (props) => {
         primary={i18n.t("mainDrawer.listItems.tickets")}
         icon={<WhatsAppIcon />}
       />
-	  
-	{showKanban && (  
-	  <ListItemLink
+          
+        {showKanban && (  
+          <ListItemLink
         to="/kanban"
         primary={`Kanban`}
         icon={<TableChartIcon />}
       />
-	  )}
+          )}
 
 
       <ListItemLink
@@ -308,8 +308,8 @@ const MainListItems = (props) => {
         primary={i18n.t("mainDrawer.listItems.quickMessages")}
         icon={<FlashOnIcon />}
       />
-	  
-	  <ListItemLink
+          
+          <ListItemLink
         to="/todolist"
         primary={i18n.t("mainDrawer.listItems.tasks")}
         icon={<BorderColorIcon />}
@@ -367,7 +367,7 @@ const MainListItems = (props) => {
               color="inherit">
               {i18n.t("mainDrawer.listItems.administration")}
             </ListSubheader>
-			
+                        
             {showCampaigns && (
               <>
                 <ListItem
@@ -484,11 +484,18 @@ const MainListItems = (props) => {
             )}
 
             {showIntegrations && (
-              <ListItemLink
-                to="/queue-integration"
-                primary={i18n.t("mainDrawer.listItems.queueIntegration")}
-                icon={<DeviceHubOutlined />}
-              />
+              <>
+                <ListItemLink
+                  to="/queue-integration"
+                  primary={i18n.t("mainDrawer.listItems.queueIntegration")}
+                  icon={<DeviceHubOutlined />}
+                />
+                <ListItemLink
+                  to="/api-integrations"
+                  primary={i18n.t("mainDrawer.listItems.apiIntegrations")}
+                  icon={<DeviceHubOutlined />}
+                />
+              </>
             )}
             <ListItemLink
               to="/connections"
@@ -534,8 +541,8 @@ const MainListItems = (props) => {
               primary={i18n.t("mainDrawer.listItems.settings")}
               icon={<SettingsOutlinedIcon />}
             />
-			
-			
+                        
+                        
             {!collapsed && <React.Fragment>
               <Divider />
               {/* 
@@ -549,7 +556,7 @@ const MainListItems = (props) => {
               </Typography>
             </React.Fragment>
             }
-			
+                        
           </>
         )}
       />

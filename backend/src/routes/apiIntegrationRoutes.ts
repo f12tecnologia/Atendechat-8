@@ -1,0 +1,14 @@
+import express from "express";
+import isAuth from "../middleware/isAuth";
+
+import * as ApiIntegrationController from "../controllers/ApiIntegrationController";
+
+const apiIntegrationRoutes = express.Router();
+
+apiIntegrationRoutes.get("/api-integrations", isAuth, ApiIntegrationController.index);
+apiIntegrationRoutes.post("/api-integrations", isAuth, ApiIntegrationController.store);
+apiIntegrationRoutes.get("/api-integrations/:integrationId", isAuth, ApiIntegrationController.show);
+apiIntegrationRoutes.put("/api-integrations/:integrationId", isAuth, ApiIntegrationController.update);
+apiIntegrationRoutes.delete("/api-integrations/:integrationId", isAuth, ApiIntegrationController.remove);
+
+export default apiIntegrationRoutes;

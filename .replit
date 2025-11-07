@@ -1,4 +1,4 @@
-modules = ["nodejs-20", "bash", "web"]
+modules = ["nodejs-20", "bash", "web", "postgresql-16"]
 [agent]
 expertMode = true
 
@@ -19,7 +19,7 @@ localPort = 8080
 externalPort = 8080
 
 [[ports]]
-localPort = 42891
+localPort = 43019
 externalPort = 3000
 
 [workflows]

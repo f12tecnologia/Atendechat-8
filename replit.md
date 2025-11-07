@@ -96,20 +96,36 @@ The PostgreSQL database is managed by Replit and includes:
 - File attachments support
 - Schedule messages
 - Analytics dashboard
+- **API Integrations System** - Manage multiple API integrations (Evolution API, Telegram, Instagram, Email)
+- **Evolution API Integration** - Full WhatsApp integration via Evolution API with instance management
+- **Multi-channel Support** - Support for multiple messaging channels through unified interface
 
 ## Recent Changes
+**November 7, 2025** - API Integrations System Implementation
+- ✅ Created `ApiIntegration` model and database migration
+- ✅ Implemented full CRUD services for API integrations
+- ✅ Built Evolution API service (create instance, send messages, webhooks)
+- ✅ Created REST API endpoints (`/api-integrations`)
+- ✅ Built frontend page for managing integrations
+- ✅ Added integration modal with support for multiple API types
+- ✅ Implemented real-time updates via Socket.IO
+- ✅ Added search and pagination support
+- ✅ Added Portuguese translations for all new components
+- ✅ Added menu item "Integrações de API" in admin section
+
 **November 7, 2025** - Initial Replit Setup Completo
 - ✅ Installed Node.js v20 and all dependencies
 - ✅ Configured PostgreSQL database with SSL support
 - ✅ Installed and configured Redis for Bull queues
 - ✅ Updated database configuration for Neon PostgreSQL
-- ✅ Applied all migrations (145+ migrations including latest)
+- ✅ Applied all migrations (146 migrations including ApiIntegrations)
 - ✅ Seeded default data successfully
 - ✅ Configured frontend for port 5000 with host bypass
 - ✅ Set up frontend workflow on webview port 5000
 - ✅ Created backend workflow on port 8080
 - ✅ Updated browserslist database
 - ✅ Both frontend and backend running successfully
+- ✅ Fixed frontend-backend proxy communication
 
 ## Deployment
 The application is configured for VM deployment with the following setup:

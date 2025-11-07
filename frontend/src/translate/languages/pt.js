@@ -854,15 +854,16 @@ const messages = {
           files: "Lista de arquivos",
           prompts: "Open.Ai",
           queueIntegration: "Integrações",
+          apiIntegrations: "Integrações de API",
         },
         appBar: {
           refresh: "Recarregar página",
           notRegister: "Sem notificações",
           greeting: {
-						hello: "Olá",
-						welcome: "Bem vindo a",
-						active: "Ativo até",
-					},
+                                                hello: "Olá",
+                                                welcome: "Bem vindo a",
+                                                active: "Ativo até",
+                                        },
           user: {
             profile: "Perfil",
             logout: "Sair",
@@ -1591,6 +1592,53 @@ const messages = {
         confirmationModal: {
           title: "Apagar mensagem?",
           message: "Esta ação não pode ser revertida.",
+        },
+      },
+      apiIntegrations: {
+        title: "Integrações de API",
+        searchPlaceholder: "Buscar integrações...",
+        table: {
+          name: "Nome",
+          type: "Tipo",
+          baseUrl: "URL Base",
+          instanceName: "Nome da Instância",
+          status: "Status",
+          actions: "Ações",
+          active: "Ativa",
+          inactive: "Inativa",
+        },
+        buttons: {
+          add: "Adicionar Integração",
+        },
+        toasts: {
+          deleted: "Integração excluída com sucesso.",
+        },
+        confirmationModal: {
+          deleteTitle: "Excluir integração",
+          deleteMessage: "Esta ação não pode ser desfeita. Deseja continuar?",
+        },
+      },
+      apiIntegrationModal: {
+        title: {
+          add: "Adicionar Integração",
+          edit: "Editar Integração",
+        },
+        form: {
+          name: "Nome",
+          type: "Tipo de Integração",
+          baseUrl: "URL Base da API",
+          apiKey: "Chave da API",
+          instanceName: "Nome da Instância",
+          webhookUrl: "URL do Webhook",
+          isActive: "Ativa",
+        },
+        buttons: {
+          okAdd: "Adicionar",
+          okEdit: "Salvar",
+          cancel: "Cancelar",
+        },
+        toasts: {
+          success: "Integração salva com sucesso.",
         },
       },
       backendErrors: {
