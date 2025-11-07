@@ -45,8 +45,8 @@ Atendechat is a comprehensive customer support platform integrated with WhatsApp
 - Configured to allow all hosts for Replit proxy
 
 ### Ports
-- **Frontend**: 5000 (webview)
-- **Backend**: 8080 (localhost only)
+- **Frontend**: 5000 (webview - acesso público)
+- **Backend**: 8080 (localhost only - proxy via frontend)
 - **Redis**: 6379 (localhost only)
 
 ## Running the Application
