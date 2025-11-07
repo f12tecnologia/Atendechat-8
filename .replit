@@ -19,8 +19,8 @@ localPort = 8080
 externalPort = 8080
 
 [[ports]]
-localPort = 41835
-externalPort = 3000
+localPort = 35799
+externalPort = 3002
 
 [workflows]
 runButton = "Project"
@@ -56,7 +56,7 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd backend && node dist/server.js"
+args = "./start-server.sh"
 waitForPort = 8080
 
 [workflows.workflow.metadata]
