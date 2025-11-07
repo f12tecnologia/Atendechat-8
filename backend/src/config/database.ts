@@ -15,6 +15,14 @@ module.exports = {
   logging: process.env.DB_DEBUG === "true" 
     ? (msg) => console.log(`[Sequelize] ${new Date().toISOString()}: ${msg}`) 
     : false,
+  dialectOptions: process.env.DB_DIALECT === "postgres" 
+    ? {
+        ssl: {
+          require: true,
+          rejectUnauthorized: false
+        }
+      }
+    : {},
   pool: {
     max: 20,
     min: 1,

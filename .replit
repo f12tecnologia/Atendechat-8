@@ -1,0 +1,11 @@
+modules = ["nodejs-20", "bash", "web"]
+[agent]
+expertMode = true
+
+[nix]
+channel = "stable-25_05"
+packages = ["redis"]
+
+[[ports]]
+localPort = 6379
+externalPort = 80
