@@ -22,7 +22,7 @@ export const index = async (req: Request, res: Response): Promise<Response> => {
     pageNumber: pageNumber ? parseInt(pageNumber, 10) : 1
   });
 
-  return res.status(200).json({ integrations, count, hasMore });
+  return res.status(200).json({ apiIntegrations: integrations, count, hasMore });
 };
 
 export const store = async (req: Request, res: Response): Promise<Response> => {
