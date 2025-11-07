@@ -22,6 +22,7 @@ import Company from "./Company";
 import Prompt from "./Prompt";
 import QueueIntegrations from "./QueueIntegrations";
 import {FlowBuilderModel} from "./FlowBuilder";
+import ApiIntegration from "./ApiIntegration";
 
 @Table
 class Whatsapp extends Model<Whatsapp> {
@@ -155,6 +156,13 @@ class Whatsapp extends Model<Whatsapp> {
 
   @BelongsTo(() => FlowBuilderModel)
   flowBuilder: FlowBuilderModel
+
+  @ForeignKey(() => ApiIntegration)
+  @Column
+  apiIntegrationId: number;
+
+  @BelongsTo(() => ApiIntegration)
+  apiIntegration: ApiIntegration;
 }
 
 export default Whatsapp;
