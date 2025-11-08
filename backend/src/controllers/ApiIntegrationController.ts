@@ -124,10 +124,17 @@ export const getQrCode = async (req: Request, res: Response): Promise<Response> 
       pairingCode: qrcodeData.pairingCode
     });
   } catch (error: any) {
-    logger.error(`Error getting QR code for integration: ${error}`);
+    logger.error(`Error getting QR code for integration:`, {
+      message: error.message,
+      statusCode: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      stack: error.stack
+    });
     return res.status(500).json({ 
       error: "Error getting QR code",
-      message: error.message 
+      message: error.message,
+      details: error.response?.data || error.message
     });
   }
 };
