@@ -95,9 +95,15 @@ class EvolutionApiService {
       );
       logger.info(`Evolution API - Instance connected: ${instanceName}`);
       return response.data;
-    } catch (error) {
-      logger.error("Evolution API - Error connecting instance:", error);
-      throw new AppError("ERR_EVOLUTION_API_CONNECT_INSTANCE");
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.message || error.message || "Unknown error";
+      const statusCode = error.response?.status || 0;
+      logger.error(`Evolution API - Error connecting instance (${statusCode}): ${errorMsg}`, {
+        instanceName,
+        error: error.response?.data || error.message,
+        stack: error.stack
+      });
+      throw error;
     }
   }
 
