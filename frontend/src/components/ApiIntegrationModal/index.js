@@ -49,12 +49,12 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const ApiIntegrationModal = ({ open, onClose, integrationId }) => {
+const ApiIntegrationModal = ({ open, onClose, integrationId, defaultType = "evolution" }) => {
   const classes = useStyles();
 
   const initialState = {
     name: "",
-    type: "evolution",
+    type: defaultType,
     baseUrl: "",
     apiKey: "",
     instanceName: "",
