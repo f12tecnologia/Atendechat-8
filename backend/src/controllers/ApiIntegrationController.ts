@@ -97,6 +97,41 @@ export const remove = async (req: Request, res: Response): Promise<Response> => 
   return res.status(200).json({ message: "Integration deleted" });
 };
 
+export const getQrCode = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const { integrationId } = req.params;
+    const { companyId } = req.user;
+
+    const integration = await ShowApiIntegrationService({
+      id: integrationId,
+      companyId
+    });
+
+    if (integration.type !== "evolution") {
+      return res.status(400).json({ error: "Integration is not Evolution API type" });
+    }
+
+    const EvolutionApiService = require("../services/EvolutionApiService/EvolutionApiService").default;
+    const evolutionService = new EvolutionApiService({
+      baseUrl: integration.baseUrl,
+      apiKey: integration.apiKey
+    });
+
+    const qrcodeData = await evolutionService.connectInstance(integration.instanceName);
+
+    return res.status(200).json({
+      qrcode: qrcodeData.code,
+      pairingCode: qrcodeData.pairingCode
+    });
+  } catch (error: any) {
+    logger.error(`Error getting QR code for integration: ${error}`);
+    return res.status(500).json({ 
+      error: "Error getting QR code",
+      message: error.message 
+    });
+  }
+};
+
 export const webhook = async (req: Request, res: Response): Promise<Response> => {
   try {
     const webhookData = req.body;

@@ -7,8 +7,9 @@ import { i18n } from "../../translate/i18n";
 import api from "../../services/api";
 import { SocketContext } from "../../context/Socket/SocketContext";
 
-const QrcodeModal = ({ open, onClose, whatsAppId }) => {
+const QrcodeModal = ({ open, onClose, whatsAppId, apiIntegrationId }) => {
   const [qrCode, setQrCode] = useState("");
+  const [loading, setLoading] = useState(false);
   const theme = useTheme();
 
   const socketManager = useContext(SocketContext);
@@ -18,14 +19,25 @@ const QrcodeModal = ({ open, onClose, whatsAppId }) => {
       if (!whatsAppId) return;
 
       try {
-        const { data } = await api.get(`/whatsapp/${whatsAppId}`);
-        setQrCode(data.qrcode);
+        setLoading(true);
+        
+        // Se tem apiIntegrationId, busca QR code da Evolution API
+        if (apiIntegrationId) {
+          const { data } = await api.get(`/api-integrations/${apiIntegrationId}/qrcode`);
+          setQrCode(data.qrcode);
+        } else {
+          // Busca do banco de dados local (Baileys nativo)
+          const { data } = await api.get(`/whatsapp/${whatsAppId}`);
+          setQrCode(data.qrcode);
+        }
       } catch (err) {
         toastError(err);
+      } finally {
+        setLoading(false);
       }
     };
     fetchSession();
-  }, [whatsAppId]);
+  }, [whatsAppId, apiIntegrationId]);
 
   useEffect(() => {
     if (!whatsAppId) return;
@@ -69,7 +81,9 @@ const QrcodeModal = ({ open, onClose, whatsAppId }) => {
             </Typography>
           </div>
           <div>
-            {qrCode ? (
+            {loading ? (
+              <span>Carregando QR Code...</span>
+            ) : qrCode ? (
               <QRCode value={qrCode} size={256} />
             ) : (
               <span>{i18n.t("qrCodeModal.waiting")}</span>

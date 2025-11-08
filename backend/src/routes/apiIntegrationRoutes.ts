@@ -8,6 +8,7 @@ const apiIntegrationRoutes = express.Router();
 apiIntegrationRoutes.get("/api-integrations", isAuth, ApiIntegrationController.index);
 apiIntegrationRoutes.post("/api-integrations", isAuth, ApiIntegrationController.store);
 apiIntegrationRoutes.get("/api-integrations/:integrationId", isAuth, ApiIntegrationController.show);
+apiIntegrationRoutes.get("/api-integrations/:integrationId/qrcode", isAuth, ApiIntegrationController.getQrCode);
 apiIntegrationRoutes.put("/api-integrations/:integrationId", isAuth, ApiIntegrationController.update);
 apiIntegrationRoutes.delete("/api-integrations/:integrationId", isAuth, ApiIntegrationController.remove);
 
