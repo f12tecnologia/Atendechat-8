@@ -107,9 +107,14 @@ class EvolutionApiService {
         `/instance/qrcode/${instanceName}`
       );
       return response.data;
-    } catch (error) {
-      logger.error("Evolution API - Error getting QR code:", error);
-      throw new AppError("ERR_EVOLUTION_API_GET_QRCODE");
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.message || error.message || "Unknown error";
+      const statusCode = error.response?.status || 0;
+      logger.error(`Evolution API - Error getting QR code (${statusCode}): ${errorMsg}`, {
+        instanceName,
+        error: error.response?.data || error.message
+      });
+      throw error;
     }
   }
 
