@@ -39,8 +39,6 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
     credentials
   } = req.body;
 
-  logger.info(`[API Integration] Creating integration: ${JSON.stringify({ name, type, baseUrl, companyId })}`);
-
   const integration = await CreateApiIntegrationService({
     name,
     type,
@@ -53,8 +51,6 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
     credentials,
     companyId
   });
-
-  logger.info(`[API Integration] Integration created successfully: ${integration.id}`);
 
   return res.status(200).json(integration);
 };
