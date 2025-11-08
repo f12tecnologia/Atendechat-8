@@ -10,11 +10,15 @@ interface EvolutionWebhookData {
   event: string;
   instance: string;
   data: {
-    key: {
+    key?: {
       remoteJid: string;
       fromMe: boolean;
       id: string;
     };
+    keyId?: string;
+    remoteJid?: string;
+    fromMe?: boolean;
+    status?: string;
     pushName?: string;
     message?: any;
     messageType?: string;
@@ -30,12 +34,21 @@ const ProcessEvolutionWebhookService = async (
     const { event, instance, data } = webhookData;
 
     // Processar apenas eventos de mensagens recebidas
-    if (event !== "messages.upsert" && event !== "messages.update") {
+    if (event !== "messages.upsert") {
+      logger.info(`Skipping event: ${event}`);
       return;
     }
 
     // Ignorar mensagens enviadas por nós
-    if (data.key.fromMe) {
+    const fromMe = data.key?.fromMe || data.fromMe || false;
+    if (fromMe) {
+      logger.info(`Skipping message from self`);
+      return;
+    }
+
+    // Garantir que temos os dados da key
+    if (!data.key) {
+      logger.warn(`No key data in webhook: ${event}`);
       return;
     }
 
