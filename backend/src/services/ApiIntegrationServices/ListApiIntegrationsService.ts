@@ -20,6 +20,8 @@ const ListApiIntegrationsService = async ({
   searchParam = "",
   pageNumber = 1
 }: Request): Promise<Response> => {
+  console.log(`[ListApiIntegrationsService] Params:`, { companyId, type, searchParam, pageNumber });
+  
   const whereCondition: any = { companyId };
   
   if (type) {
@@ -35,6 +37,8 @@ const ListApiIntegrationsService = async ({
     ];
   }
 
+  console.log(`[ListApiIntegrationsService] WHERE condition:`, JSON.stringify(whereCondition));
+
   const limit = 20;
   const offset = limit * (pageNumber - 1);
 
@@ -44,6 +48,9 @@ const ListApiIntegrationsService = async ({
     offset,
     order: [["createdAt", "DESC"]]
   });
+
+  console.log(`[ListApiIntegrationsService] Found ${integrations.length} integrations of ${count} total`);
+  console.log(`[ListApiIntegrationsService] Integration IDs:`, integrations.map(i => i.id));
 
   const hasMore = count > offset + integrations.length;
 
