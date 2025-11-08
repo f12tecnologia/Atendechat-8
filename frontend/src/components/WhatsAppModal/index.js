@@ -142,19 +142,25 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
   useEffect(() => {
     (async () => {
       try {
+        console.log("🔄 useEffect principal executado - carregando dados iniciais");
+        
         const { data } = await api.get("/prompt");
+        console.log("✅ Prompts carregados:", data.prompts?.length || 0);
         setPrompts(data.prompts);
 
         const {data: dataIntegration} = await api.get("/queueIntegration");
+        console.log("✅ Queue integrations carregadas:", dataIntegration.queueIntegrations?.length || 0);
         setIntegrations(dataIntegration.queueIntegrations);
 
+        console.log("🔄 Chamando fetchEvolutionIntegrations...");
         await fetchEvolutionIntegrations();
 
       } catch (err) {
+        console.error("❌ Erro no useEffect principal:", err);
         toastError(err);
       }
     })();
-  }, [whatsAppId]);
+  }, [open]);
 
   useEffect(() => {
     (async () => {
