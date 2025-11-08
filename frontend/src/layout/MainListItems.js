@@ -490,6 +490,11 @@ const MainListItems = (props) => {
                   primary={i18n.t("mainDrawer.listItems.queueIntegration")}
                   icon={<DeviceHubOutlined />}
                 />
+                <ListItemLink
+                  to="/evolution-integrations"
+                  primary="Integrações Evolution API"
+                  icon={<WhatsAppIcon />}
+                />
               </>
             )}
             <ListItemLink

@@ -37,6 +37,7 @@ import Files from "../pages/Files/";
 import Prompts from "../pages/Prompts";
 import QueueIntegration from "../pages/QueueIntegration";
 import ApiIntegrations from "../pages/ApiIntegrations";
+import EvolutionIntegrations from "../pages/EvolutionIntegrations";
 import ForgetPassword from "../pages/ForgetPassWord/"; // Reset PassWd
 import CampaignsPhrase from "../pages/CampaignsPhrase";
 import FlowBuilder from "../pages/FlowBuilder";
@@ -105,6 +106,12 @@ const Routes = () => {
                   exact
                   path="/api-integrations"
                   component={ApiIntegrations}
+                  isPrivate
+                />
+                <Route
+                  exact
+                  path="/evolution-integrations"
+                  component={EvolutionIntegrations}
                   isPrivate
                 />
 
