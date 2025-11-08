@@ -101,11 +101,15 @@ The PostgreSQL database is managed by Replit and includes:
 - **Multi-channel Support** - Support for multiple messaging channels through unified interface
 
 ## Recent Changes
-**November 8, 2025** - QR Code Fix & Menu Reorganization
-- ✅ **CORREÇÃO CRÍTICA**: QR code agora aparece corretamente ao conectar Evolution API
-  - Implementado retry mechanism: 5 tentativas com delay de 2 segundos entre cada uma
-  - Logs detalhados para rastreamento de sucesso/falha
-  - QR code gerado pela Evolution API precisa de alguns segundos após criação da instância
+**November 8, 2025** - Correções Críticas: QR Code + Webhook Evolution API
+- ✅ **CORREÇÃO CRÍTICA 1**: BACKEND_URL configurado corretamente
+  - Alterado de `http://localhost:8080` para URL pública do Replit
+  - Webhook agora funciona: `https://7b12b638-ed7a-4d8c-89cd-a7aedcd25a36-00-sic5vtm2zqa8.kirk.replit.dev/api-integrations/webhook/{companyId}`
+  - Evolution API agora consegue enviar mensagens para o Atendechat
+- ✅ **CORREÇÃO CRÍTICA 2**: Logging melhorado do getQrCode
+  - Logs agora mostram statusCode e mensagem real do erro da API
+  - Facilita debug de problemas de conexão
+  - Mantém retry mechanism (5 tentativas, delay 2s)
 - ✅ **MENU REORGANIZADO**: "Integrações Evolution API" agora é submenu dentro de "Integrações"
   - Melhor organização da navegação
   - Padrão consistente com outros submenus (Campanhas, Flows)
