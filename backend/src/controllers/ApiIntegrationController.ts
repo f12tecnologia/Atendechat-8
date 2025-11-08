@@ -15,12 +15,16 @@ export const index = async (req: Request, res: Response): Promise<Response> => {
     pageNumber?: string;
   };
 
+  logger.info(`[API Integration] GET /api-integrations - companyId: ${companyId}, type: ${type}`);
+
   const { integrations, count, hasMore } = await ListApiIntegrationsService({
     companyId,
     type,
     searchParam,
     pageNumber: pageNumber ? parseInt(pageNumber, 10) : 1
   });
+
+  logger.info(`[API Integration] Found ${integrations.length} integrations for company ${companyId}`);
 
   return res.status(200).json({ apiIntegrations: integrations, count, hasMore });
 };

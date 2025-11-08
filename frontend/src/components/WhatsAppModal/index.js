@@ -125,11 +125,16 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
 
   const fetchEvolutionIntegrations = async () => {
     try {
+      console.log("=== fetchEvolutionIntegrations CHAMADO ===");
       const {data: evolutionData} = await api.get("/api-integrations", {
         params: { type: "evolution" }
       });
+      console.log("Dados recebidos da API:", evolutionData);
+      console.log("Array de integrações:", evolutionData.apiIntegrations);
       setEvolutionIntegrations(evolutionData.apiIntegrations || []);
+      console.log("Estado atualizado com", evolutionData.apiIntegrations?.length || 0, "integrações");
     } catch (err) {
+      console.error("Erro ao buscar integrações:", err);
       toastError(err);
     }
   };
