@@ -37,6 +37,7 @@ import api from "../../services/api";
 import WhatsAppModal from "../../components/WhatsAppModal";
 import ConfirmationModal from "../../components/ConfirmationModal";
 import QrcodeModal from "../../components/QrcodeModal";
+import ConnectInstanceModal from "../../components/ConnectInstanceModal";
 import { i18n } from "../../translate/i18n";
 import { WhatsAppsContext } from "../../context/WhatsApp/WhatsAppsContext";
 import toastError from "../../errors/toastError";
@@ -102,6 +103,7 @@ const Connections = () => {
         const { whatsApps, loading } = useContext(WhatsAppsContext);
         const [whatsAppModalOpen, setWhatsAppModalOpen] = useState(false);
         const [qrModalOpen, setQrModalOpen] = useState(false);
+        const [connectInstanceModalOpen, setConnectInstanceModalOpen] = useState(false);
         const [selectedWhatsApp, setSelectedWhatsApp] = useState(null);
         const [confirmModalOpen, setConfirmModalOpen] = useState(false);
         const confirmationModalInitialState = {
@@ -150,6 +152,16 @@ const Connections = () => {
                 setSelectedWhatsApp(null);
                 setQrModalOpen(false);
         }, [setQrModalOpen, setSelectedWhatsApp]);
+
+        const handleOpenConnectInstanceModal = whatsApp => {
+                setSelectedWhatsApp(whatsApp);
+                setConnectInstanceModalOpen(true);
+        };
+
+        const handleCloseConnectInstanceModal = useCallback(() => {
+                setSelectedWhatsApp(null);
+                setConnectInstanceModalOpen(false);
+        }, []);
 
         const handleEditWhatsApp = whatsApp => {
                 setSelectedWhatsApp(whatsApp);
@@ -252,9 +264,9 @@ const Connections = () => {
                                                                         size="small"
                                                                         variant="outlined"
                                                                         color="primary"
-                                                                        onClick={() => handleOpenQrModal(whatsApp)}
+                                                                        onClick={() => handleOpenConnectInstanceModal(whatsApp)}
                                                                 >
-                                                                        QR Code
+                                                                        Conectar
                                                                 </Button>
                                                         </>
                                                 )}
@@ -270,9 +282,9 @@ const Connections = () => {
                                                 size="small"
                                                 variant="outlined"
                                                 color="primary"
-                                                onClick={() => handleOpenQrModal(whatsApp)}
+                                                onClick={() => handleOpenConnectInstanceModal(whatsApp)}
                                         >
-                                                QR Code
+                                                Conectar
                                         </Button>
                                 )}
                         </>
@@ -333,6 +345,11 @@ const Connections = () => {
                                 onClose={handleCloseQrModal}
                                 whatsAppId={!whatsAppModalOpen && selectedWhatsApp?.id}
                                 apiIntegrationId={!whatsAppModalOpen && selectedWhatsApp?.apiIntegrationId}
+                        />
+                        <ConnectInstanceModal
+                                open={connectInstanceModalOpen}
+                                onClose={handleCloseConnectInstanceModal}
+                                apiIntegrationId={selectedWhatsApp?.apiIntegrationId}
                         />
                         <WhatsAppModal
                                 open={whatsAppModalOpen}

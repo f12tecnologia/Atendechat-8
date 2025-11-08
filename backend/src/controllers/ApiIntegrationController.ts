@@ -139,6 +139,78 @@ export const getQrCode = async (req: Request, res: Response): Promise<Response> 
   }
 };
 
+export const getConnectionStatus = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const { integrationId } = req.params;
+    const { instanceName } = req.body;
+    const { companyId } = req.user;
+
+    if (!instanceName) {
+      return res.status(400).json({ error: "Instance name is required" });
+    }
+
+    const integration = await ShowApiIntegrationService({
+      id: integrationId,
+      companyId
+    });
+
+    if (integration.type !== "evolution") {
+      return res.status(400).json({ error: "Integration is not Evolution API type" });
+    }
+
+    const EvolutionApiService = require("../services/EvolutionApiService/EvolutionApiService").default;
+    const evolutionService = new EvolutionApiService({
+      baseUrl: integration.baseUrl,
+      apiKey: integration.apiKey
+    });
+
+    logger.info(`[getConnectionStatus] Checking status for instance: ${instanceName}`);
+
+    // Primeiro verifica o status da conexão
+    try {
+      const statusData = await evolutionService.getInstanceStatus(instanceName);
+      
+      logger.info(`[getConnectionStatus] Instance status:`, statusData);
+
+      // Se já está conectada, retorna o status
+      if (statusData.state === "open" || statusData.instance?.state === "open") {
+        return res.status(200).json({
+          connected: true,
+          status: statusData,
+          message: "Conexão já está ativa"
+        });
+      }
+    } catch (statusError: any) {
+      // Se não conseguir pegar o status, a instância pode não existir
+      logger.warn(`[getConnectionStatus] Could not get status, instance may not exist: ${statusError.message}`);
+    }
+
+    // Se não está conectada, busca o QR code
+    logger.info(`[getConnectionStatus] Instance not connected, fetching QR code...`);
+    const qrcodeData = await evolutionService.getQrCode(instanceName);
+
+    return res.status(200).json({
+      connected: false,
+      qrcode: qrcodeData.qrcode?.code || qrcodeData.code,
+      base64: qrcodeData.qrcode?.base64 || qrcodeData.base64,
+      pairingCode: qrcodeData.qrcode?.pairingCode || qrcodeData.pairingCode,
+      message: "Leia o QR Code para conectar"
+    });
+  } catch (error: any) {
+    logger.error(`Error getting connection status:`, {
+      message: error.message,
+      statusCode: error.response?.status,
+      data: error.response?.data,
+      stack: error.stack
+    });
+    return res.status(500).json({ 
+      error: "Error getting connection status",
+      message: error.response?.data?.message || error.message,
+      details: error.response?.data || error.message
+    });
+  }
+};
+
 export const webhook = async (req: Request, res: Response): Promise<Response> => {
   try {
     const webhookData = req.body;

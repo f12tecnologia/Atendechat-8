@@ -9,6 +9,7 @@ apiIntegrationRoutes.get("/api-integrations", isAuth, ApiIntegrationController.i
 apiIntegrationRoutes.post("/api-integrations", isAuth, ApiIntegrationController.store);
 apiIntegrationRoutes.get("/api-integrations/:integrationId", isAuth, ApiIntegrationController.show);
 apiIntegrationRoutes.get("/api-integrations/:integrationId/qrcode", isAuth, ApiIntegrationController.getQrCode);
+apiIntegrationRoutes.post("/api-integrations/:integrationId/connection-status", isAuth, ApiIntegrationController.getConnectionStatus);
 apiIntegrationRoutes.put("/api-integrations/:integrationId", isAuth, ApiIntegrationController.update);
 apiIntegrationRoutes.delete("/api-integrations/:integrationId", isAuth, ApiIntegrationController.remove);
 
