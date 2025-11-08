@@ -101,6 +101,25 @@ The PostgreSQL database is managed by Replit and includes:
 - **Multi-channel Support** - Support for multiple messaging channels through unified interface
 
 ## Recent Changes
+**November 8, 2025** - Evolution Integrations Admin Page
+- ✅ Created dedicated admin page for Evolution API integrations (`/evolution-integrations`)
+- ✅ Added menu item "Integrações Evolution API" in admin sidebar (visible when integrations are enabled)
+- ✅ Page filters integrations by type='evolution' automatically
+- ✅ Full CRUD operations: create, edit, view, delete Evolution integrations
+- ✅ Real-time updates via Socket.IO when integrations are modified
+- ✅ Search and pagination support
+- ✅ Cleaned up 17 test integrations from database, keeping only production data
+- ✅ Modified ApiIntegrationModal to accept defaultType prop for better UX
+- ✅ Integrated with WhatsApp modal dropdown for seamless Evolution API selection
+
+**November 8, 2025** - Evolution API Integration in Connections
+- ✅ Fixed critical bug: useEffect dependency changed from [whatsAppId] to [open] to ensure Evolution integrations load when modal opens
+- ✅ Backend now returns `apiIntegrations` key (not `integrations`) for consistent API response
+- ✅ Recompiled backend TypeScript to apply controller changes
+- ✅ Evolution API integrations now populate correctly in WhatsApp connection modal dropdown
+- ✅ Inline "+" button to create new Evolution API integrations directly from modal
+- ✅ Anti-duplicate validation prevents duplicate Evolution API instances
+
 **November 7, 2025** - Evolution API Webhook Integration
 - ✅ Created ProcessEvolutionWebhookService to receive and process Evolution API webhooks
 - ✅ Webhook endpoint: `/api-integrations/webhook/:companyId`
