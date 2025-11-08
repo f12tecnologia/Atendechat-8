@@ -86,15 +86,30 @@ const ApiIntegrationModal = ({ open, onClose, integrationId }) => {
   };
 
   const handleSaveIntegration = async (values) => {
+    console.log("=== handleSaveIntegration INICIADO ===");
+    console.log("Values recebidos:", values);
+    console.log("integrationId:", integrationId);
+    
     const integrationData = { ...values };
+    console.log("integrationData preparado:", integrationData);
+    
     try {
+      console.log("Tentando salvar integração...");
       if (integrationId) {
+        console.log("Editando integração existente...");
         await api.put(`/api-integrations/${integrationId}`, integrationData);
       } else {
-        await api.post("/api-integrations", integrationData);
+        console.log("Criando nova integração...");
+        console.log("URL:", "/api-integrations");
+        console.log("Dados:", JSON.stringify(integrationData));
+        const response = await api.post("/api-integrations", integrationData);
+        console.log("Resposta do servidor:", response);
       }
+      console.log("Integração salva com sucesso!");
       toast.success(i18n.t("apiIntegrationModal.toasts.success"));
     } catch (err) {
+      console.error("ERRO ao salvar integração:", err);
+      console.error("Erro completo:", JSON.stringify(err, null, 2));
       toastError(err);
     }
     handleClose();
