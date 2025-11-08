@@ -101,6 +101,16 @@ The PostgreSQL database is managed by Replit and includes:
 - **Multi-channel Support** - Support for multiple messaging channels through unified interface
 
 ## Recent Changes
+**November 8, 2025** - QR Code Fix & Menu Reorganization
+- ✅ **CORREÇÃO CRÍTICA**: QR code agora aparece corretamente ao conectar Evolution API
+  - Implementado retry mechanism: 5 tentativas com delay de 2 segundos entre cada uma
+  - Logs detalhados para rastreamento de sucesso/falha
+  - QR code gerado pela Evolution API precisa de alguns segundos após criação da instância
+- ✅ **MENU REORGANIZADO**: "Integrações Evolution API" agora é submenu dentro de "Integrações"
+  - Melhor organização da navegação
+  - Padrão consistente com outros submenus (Campanhas, Flows)
+  - Submenu inclui: "Integrações de Fila" e "Integrações Evolution API"
+
 **November 8, 2025** - Evolution Integrations Admin Page
 - ✅ Created dedicated admin page for Evolution API integrations (`/evolution-integrations`)
 - ✅ Added menu item "Integrações Evolution API" in admin sidebar (visible when integrations are enabled)
