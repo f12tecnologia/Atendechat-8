@@ -265,6 +265,16 @@ const Connections = () => {
                                                 {i18n.t("connections.buttons.connecting")}
                                         </Button>
                                 )}
+                                {whatsApp.status === "PENDING" && whatsApp.apiIntegrationId && (
+                                        <Button
+                                                size="small"
+                                                variant="outlined"
+                                                color="primary"
+                                                onClick={() => handleOpenQrModal(whatsApp)}
+                                        >
+                                                QR Code
+                                        </Button>
+                                )}
                         </>
                 );
         };
