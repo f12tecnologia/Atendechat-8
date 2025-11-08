@@ -155,6 +155,7 @@ const MainListItems = (props) => {
   const { getPlanCompany } = usePlans();
   
   const [openFlowsSubmenu, setOpenFlowsSubmenu] = useState(false);
+  const [openIntegrationsSubmenu, setOpenIntegrationsSubmenu] = useState(false);
 
   const socketManager = useContext(SocketContext);
 
@@ -485,16 +486,47 @@ const MainListItems = (props) => {
 
             {showIntegrations && (
               <>
-                <ListItemLink
-                  to="/queue-integration"
-                  primary={i18n.t("mainDrawer.listItems.queueIntegration")}
-                  icon={<DeviceHubOutlined />}
-                />
-                <ListItemLink
-                  to="/evolution-integrations"
-                  primary="Integrações Evolution API"
-                  icon={<WhatsAppIcon />}
-                />
+                <ListItem
+                  button
+                  onClick={() => setOpenIntegrationsSubmenu((prev) => !prev)}
+                >
+                  <ListItemIcon>
+                    <DeviceHubOutlined />
+                  </ListItemIcon>
+                  <ListItemText primary="Integrações" />
+                  {openIntegrationsSubmenu ? (
+                    <ExpandLessIcon />
+                  ) : (
+                    <ExpandMoreIcon />
+                  )}
+                </ListItem>
+                <Collapse
+                  style={{ paddingLeft: 15 }}
+                  in={openIntegrationsSubmenu}
+                  timeout="auto"
+                  unmountOnExit
+                >
+                  <List component="div" disablePadding>
+                    <ListItem
+                      onClick={() => history.push("/queue-integration")}
+                      button
+                    >
+                      <ListItemIcon>
+                        <DeviceHubOutlined />
+                      </ListItemIcon>
+                      <ListItemText primary={i18n.t("mainDrawer.listItems.queueIntegration")} />
+                    </ListItem>
+                    <ListItem
+                      onClick={() => history.push("/evolution-integrations")}
+                      button
+                    >
+                      <ListItemIcon>
+                        <WhatsAppIcon />
+                      </ListItemIcon>
+                      <ListItemText primary="Integrações Evolution API" />
+                    </ListItem>
+                  </List>
+                </Collapse>
               </>
             )}
             <ListItemLink

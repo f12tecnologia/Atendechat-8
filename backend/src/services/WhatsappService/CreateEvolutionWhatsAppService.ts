@@ -79,16 +79,42 @@ const CreateEvolutionWhatsAppService = async ({
 
     logger.info(`Evolution instance created: ${instanceName}`, evolutionInstance);
 
-    // Tentar obter o QR Code
-    try {
-      const qrResponse = await evolutionService.getQrCode(instanceName);
-      if (qrResponse && qrResponse.base64) {
-        qrcode = qrResponse.base64;
-      } else if (qrResponse && qrResponse.qrcode) {
-        qrcode = qrResponse.qrcode.base64 || qrResponse.qrcode.code || null;
+    // Tentar obter o QR Code com retry (até 5 tentativas com delay de 2 segundos)
+    const maxRetries = 5;
+    const retryDelay = 2000; // 2 segundos
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        logger.info(`Tentando obter QR code (tentativa ${attempt}/${maxRetries})...`);
+        
+        // Aguardar antes de tentar (exceto na primeira tentativa)
+        if (attempt > 1) {
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+        }
+        
+        const qrResponse = await evolutionService.getQrCode(instanceName);
+        
+        if (qrResponse && qrResponse.base64) {
+          qrcode = qrResponse.base64;
+          logger.info(`✅ QR code obtido com sucesso na tentativa ${attempt}`);
+          break;
+        } else if (qrResponse && qrResponse.qrcode) {
+          qrcode = qrResponse.qrcode.base64 || qrResponse.qrcode.code || null;
+          if (qrcode) {
+            logger.info(`✅ QR code obtido com sucesso na tentativa ${attempt}`);
+            break;
+          }
+        }
+        
+        logger.warn(`⚠️ QR code ainda não disponível (tentativa ${attempt}/${maxRetries})`);
+      } catch (qrError: any) {
+        logger.warn(`⚠️ Erro ao obter QR code (tentativa ${attempt}/${maxRetries}):`, qrError.message);
+        
+        // Se for a última tentativa, apenas loga o erro
+        if (attempt === maxRetries) {
+          logger.error(`❌ Não foi possível obter o QR code após ${maxRetries} tentativas`);
+        }
       }
-    } catch (qrError) {
-      logger.warn(`Could not get QR code immediately for ${instanceName}:`, qrError);
     }
 
     // Criar conexão WhatsApp com provider="evolution"
