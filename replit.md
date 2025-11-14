@@ -101,6 +101,24 @@ The PostgreSQL database is managed by Replit and includes:
 - **Multi-channel Support** - Support for multiple messaging channels through unified interface
 
 ## Recent Changes
+**November 14, 2025** - Melhorias UX Evolution API (Fotos de Perfil + Filas Automáticas)
+- ✅ **MELHORIA 1**: Fotos de perfil automáticas
+  - Adicionado `getProfilePicture()` em EvolutionApiService
+  - Busca automática via `/chat/fetchProfilePictureUrl/{instanceName}`
+  - Contatos criados via webhook agora têm foto de perfil (exceto grupos)
+  - Fallback gracioso em caso de erro (null)
+- ✅ **MELHORIA 2**: Atribuição automática de fila padrão
+  - Corrigido bug: tickets mostravam "SEM FILA" (queueId=0)
+  - Implementado: reload + ordenação em memória por Queue.orderQueue ASC
+  - Tickets agora recebem automaticamente a primeira fila do WhatsApp
+  - Log detalhado para debug (`Default queue for whatsapp X: Y (Nome)`)
+- ✅ **VERIFICAÇÃO 3**: Envio de arquivos Evolution API
+  - Confirmado: MessageInput não tem restrições para Evolution
+  - EvolutionProvider já implementado
+  - SendWhatsAppMedia roteia corretamente para Evolution
+- 📝 **Status**: Fotos de perfil e filas funcionando corretamente ✅
+- 📝 **Próximos passos**: Cache de fotos de perfil se tráfego crescer
+
 **November 14, 2025** - Correções Críticas no Webhook Evolution API
 - ✅ **CORREÇÃO 1**: Normalização de event names
   - Evolution API envia `MESSAGES_UPSERT` (uppercase), código esperava `messages.upsert` (lowercase)
