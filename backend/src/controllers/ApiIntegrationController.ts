@@ -149,10 +149,25 @@ export const getConnectionStatus = async (req: Request, res: Response): Promise<
       return res.status(400).json({ error: "Instance name is required" });
     }
 
-    const integration = await ShowApiIntegrationService({
-      id: integrationId,
-      companyId
-    });
+    // Tenta buscar a integração
+    let integration;
+    try {
+      integration = await ShowApiIntegrationService({
+        id: integrationId,
+        companyId
+      });
+    } catch (showError: any) {
+      // Se a integração não existe (AppError ERR_NO_INTEGRATION_FOUND), retorna 404 específico
+      if (showError.message === "ERR_NO_INTEGRATION_FOUND") {
+        logger.warn(`[getConnectionStatus] Integration ${integrationId} not found for company ${companyId}`);
+        return res.status(404).json({ 
+          error: "ERR_INTEGRATION_NOT_FOUND",
+          message: "Integração Evolution API não encontrada. Por favor, crie uma integração primeiro na página 'Integrações Evolution API'."
+        });
+      }
+      // Outro erro, repropaga
+      throw showError;
+    }
 
     if (integration.type !== "evolution") {
       return res.status(400).json({ error: "Integration is not Evolution API type" });
@@ -184,7 +199,8 @@ export const getConnectionStatus = async (req: Request, res: Response): Promise<
         return res.status(200).json({
           connected: true,
           status: statusData,
-          message: "Conexão já está ativa"
+          message: "Conexão já está ativa",
+          instanceName: instanceName
         });
       }
     } catch (statusError: any) {
@@ -201,7 +217,8 @@ export const getConnectionStatus = async (req: Request, res: Response): Promise<
       qrcode: qrcodeData.qrcode?.code || qrcodeData.code,
       base64: qrcodeData.qrcode?.base64 || qrcodeData.base64,
       pairingCode: qrcodeData.qrcode?.pairingCode || qrcodeData.pairingCode,
-      message: "Leia o QR Code para conectar"
+      message: "Leia o QR Code para conectar",
+      instanceName: instanceName
     });
   } catch (error: any) {
     logger.error(`Error getting connection status:`, {

@@ -76,7 +76,17 @@ const ConnectInstanceModal = ({ open, onClose, apiIntegrationId }) => {
         toast.info(data.message || "QR Code gerado! Leia para conectar.");
       }
     } catch (err) {
-      toastError(err);
+      // Detecta erro específico de integração não encontrada
+      if (err.response?.status === 404 && err.response?.data?.error === "ERR_INTEGRATION_NOT_FOUND") {
+        toast.error(err.response.data.message || "Integração Evolution API não encontrada. Por favor, crie uma integração primeiro.");
+        handleClose();
+        // Aguarda um pouco antes de redirecionar para permitir visualizar o toast
+        setTimeout(() => {
+          window.location.href = "/#/evolution-integrations";
+        }, 2000);
+      } else {
+        toastError(err);
+      }
     } finally {
       setLoading(false);
     }
