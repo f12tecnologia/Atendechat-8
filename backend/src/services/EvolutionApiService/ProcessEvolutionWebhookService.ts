@@ -1,11 +1,13 @@
 import Message from "../../models/Message";
 import Whatsapp from "../../models/Whatsapp";
+import Queue from "../../models/Queue";
 import ApiIntegration from "../../models/ApiIntegration";
 import CreateOrUpdateContactService from "../ContactServices/CreateOrUpdateContactService";
 import FindOrCreateTicketService from "../TicketServices/FindOrCreateTicketService";
 import CreateMessageService from "../MessageServices/CreateMessageService";
 import { getIO } from "../../libs/socket";
 import { logger } from "../../utils/logger";
+import EvolutionApiService from "./EvolutionApiService";
 
 interface EvolutionWebhookData {
   event: string;
@@ -259,15 +261,40 @@ const ProcessEvolutionWebhookService = async (
       });
     }
 
-    // Extrair número do contato (remover @s.whatsapp.net)
-    const contactNumber = data.key.remoteJid.replace("@s.whatsapp.net", "");
+    // Extrair número do contato (remover @s.whatsapp.net e @lid)
+    const isGroup = data.key.remoteJid.includes("@g.us");
+    const contactNumber = data.key.remoteJid
+      .replace("@s.whatsapp.net", "")
+      .replace("@lid", "")
+      .replace("@g.us", "");
+    
+    // Buscar foto de perfil (apenas para contatos individuais, não grupos)
+    let profilePicUrl = "";
+    if (!isGroup && contactNumber && apiIntegration.instanceName) {
+      try {
+        const evolutionService = new EvolutionApiService({
+          baseUrl: apiIntegration.baseUrl,
+          apiKey: apiIntegration.apiKey
+        });
+        
+        const fetchedProfilePic = await evolutionService.getProfilePicture(
+          apiIntegration.instanceName,
+          contactNumber
+        );
+        
+        profilePicUrl = fetchedProfilePic || "";
+      } catch (error) {
+        logger.warn(`[WEBHOOK] Failed to fetch profile picture for ${contactNumber}: ${error.message}`);
+        profilePicUrl = "";
+      }
+    }
     
     // Criar ou atualizar contato
     const contactData = {
       name: data.pushName || contactNumber,
       number: contactNumber,
-      profilePicUrl: "",
-      isGroup: data.key.remoteJid.includes("@g.us")
+      profilePicUrl,
+      isGroup
     };
 
     const contact = await CreateOrUpdateContactService({
@@ -284,11 +311,27 @@ const ProcessEvolutionWebhookService = async (
       return;
     }
 
+    // Buscar fila padrão do WhatsApp (primeira fila ordenada por orderQueue)
+    await whatsapp.reload({
+      include: [
+        {
+          model: Queue,
+          as: "queues",
+          attributes: ["id", "name", "color", "greetingMessage"]
+        }
+      ],
+      order: [["queues", "orderQueue", "ASC"]]
+    });
+
+    const defaultQueueId = whatsapp.queues && whatsapp.queues.length > 0 
+      ? whatsapp.queues[0].id 
+      : 0;
+
     // Criar ou encontrar ticket
     const ticket = await FindOrCreateTicketService(
       contact,
       whatsapp.id!,
-      0,
+      defaultQueueId,
       companyId,
       undefined
     );
