@@ -311,21 +311,26 @@ const ProcessEvolutionWebhookService = async (
       return;
     }
 
-    // Buscar fila padrão do WhatsApp (primeira fila ordenada por orderQueue)
+    // Buscar fila padrão do WhatsApp (primeira fila via WhatsappQueue)
+    // Como Sequelize v5 não suporta ordenação em BelongsToMany,
+    // buscamos todas e ordenamos em memória
     await whatsapp.reload({
-      include: [
-        {
-          model: Queue,
-          as: "queues",
-          attributes: ["id", "name", "color", "greetingMessage"]
-        }
-      ],
-      order: [["queues", "orderQueue", "ASC"]]
+      include: [{
+        model: Queue,
+        as: "queues",
+        attributes: ["id", "name", "orderQueue"]
+      }]
     });
 
-    const defaultQueueId = whatsapp.queues && whatsapp.queues.length > 0 
-      ? whatsapp.queues[0].id 
-      : 0;
+    // Ordenar filas por orderQueue em memória (mais confiável que SQL order)
+    const sortedQueues = (whatsapp.queues || []).sort((a, b) => 
+      (a.orderQueue || 9999) - (b.orderQueue || 9999)
+    );
+    
+    const defaultQueueId = sortedQueues.length > 0 ? sortedQueues[0].id : 0;
+    const defaultQueueName = sortedQueues.length > 0 ? sortedQueues[0].name : "none";
+    
+    logger.info(`[WEBHOOK] Default queue for whatsapp ${whatsapp.id}: ${defaultQueueId} (${defaultQueueName})`);
 
     // Criar ou encontrar ticket
     const ticket = await FindOrCreateTicketService(
