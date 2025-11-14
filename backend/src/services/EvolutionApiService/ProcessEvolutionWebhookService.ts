@@ -10,6 +10,8 @@ import { logger } from "../../utils/logger";
 interface EvolutionWebhookData {
   event: string;
   instance: string;
+  server_url?: string;
+  apikey?: string;
   data: {
     // Evolution API envia mensagens em array
     messages?: Array<{
@@ -64,7 +66,7 @@ const ProcessEvolutionWebhookService = async (
     }
 
     // Buscar a integração Evolution API
-    const apiIntegration = await ApiIntegration.findOne({
+    let apiIntegration = await ApiIntegration.findOne({
       where: {
         companyId,
         type: "evolution",
@@ -75,14 +77,39 @@ const ProcessEvolutionWebhookService = async (
 
     if (!apiIntegration) {
       logger.warn(`[WEBHOOK] Integration not found for instance: ${instance}`);
+      logger.info(`[WEBHOOK] Auto-creating integration for instance: ${instance}`);
       
-      // Listar todas as integrações disponíveis para debug
-      const allIntegrations = await ApiIntegration.findAll({
-        where: { companyId, type: "evolution" },
-        attributes: ["id", "name", "instanceName", "isActive"]
-      });
-      logger.warn(`[WEBHOOK] Available integrations: ${JSON.stringify(allIntegrations)}`);
-      return;
+      // Auto-criar integração para esta instância
+      try {
+        // Extrair URL base e API key do webhook (se disponível via headers ou payload)
+        const baseUrl = webhookData.server_url || "https://evolution.intelfoz.app.br";
+        const apiKey = webhookData.apikey || "c680d58f04ed48c97cb13bd3b5b7a05b"; // fallback para key conhecida
+        
+        apiIntegration = await ApiIntegration.create({
+          name: `Evolution - ${instance}`,
+          type: "evolution",
+          baseUrl,
+          apiKey,
+          instanceName: instance,
+          isActive: true,
+          webhookUrl: "",
+          companyId
+        });
+        
+        logger.info(`[WEBHOOK] ✅ Auto-created integration: id=${apiIntegration.id}, name=${apiIntegration.name}`);
+        
+        // Emitir evento Socket.IO para atualizar frontend
+        const io = getIO();
+        io.to(`company-${companyId}-notification`)
+          .to(`company-${companyId}-mainchannel`)
+          .emit(`company-${companyId}-apiIntegration`, {
+            action: "create",
+            apiIntegration
+          });
+      } catch (error) {
+        logger.error(`[WEBHOOK] Failed to auto-create integration: ${error}`);
+        return;
+      }
     }
     
     logger.info(`[WEBHOOK] Found integration: id=${apiIntegration.id}, name=${apiIntegration.name}`);
