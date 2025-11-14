@@ -11,6 +11,19 @@ interface EvolutionWebhookData {
   event: string;
   instance: string;
   data: {
+    // Evolution API envia mensagens em array
+    messages?: Array<{
+      key: {
+        remoteJid: string;
+        fromMe: boolean;
+        id: string;
+      };
+      pushName?: string;
+      message?: any;
+      messageType?: string;
+      messageTimestamp?: number;
+    }>;
+    // Campos diretos (compatibilidade Baileys)
     key?: {
       remoteJid: string;
       fromMe: boolean;
@@ -34,8 +47,21 @@ const ProcessEvolutionWebhookService = async (
   companyId: number
 ): Promise<void> => {
   try {
-    const { event, instance, data } = webhookData;
+    let { event, instance, data } = webhookData;
     const io = getIO();
+
+    // Log detalhado do webhook recebido
+    logger.info(`[WEBHOOK] Received: event=${event}, instance=${instance}, companyId=${companyId}`);
+    logger.info(`[WEBHOOK] Full payload: ${JSON.stringify(webhookData, null, 2)}`);
+
+    // Normalizar nome do evento: Evolution API envia em UPPERCASE (MESSAGES_UPSERT, CONNECTION_UPDATE)
+    // mas o código espera lowercase estilo Baileys (messages.upsert, connection.update)
+    const originalEvent = event;
+    event = event.toLowerCase().replace(/_/g, ".");
+    
+    if (originalEvent !== event) {
+      logger.info(`[WEBHOOK] Normalized event name: ${originalEvent} -> ${event}`);
+    }
 
     // Buscar a integração Evolution API
     const apiIntegration = await ApiIntegration.findOne({
@@ -48,9 +74,18 @@ const ProcessEvolutionWebhookService = async (
     });
 
     if (!apiIntegration) {
-      logger.warn(`Integration not found for instance: ${instance}`);
+      logger.warn(`[WEBHOOK] Integration not found for instance: ${instance}`);
+      
+      // Listar todas as integrações disponíveis para debug
+      const allIntegrations = await ApiIntegration.findAll({
+        where: { companyId, type: "evolution" },
+        attributes: ["id", "name", "instanceName", "isActive"]
+      });
+      logger.warn(`[WEBHOOK] Available integrations: ${JSON.stringify(allIntegrations)}`);
       return;
     }
+    
+    logger.info(`[WEBHOOK] Found integration: id=${apiIntegration.id}, name=${apiIntegration.name}`);
 
     // Processar eventos de conexão
     if (event === "connection.update") {
@@ -135,22 +170,31 @@ const ProcessEvolutionWebhookService = async (
 
     // Processar apenas eventos de mensagens recebidas
     if (event !== "messages.upsert") {
-      logger.info(`Skipping event: ${event}`);
+      logger.info(`[WEBHOOK] Skipping event: ${event}`);
       return;
+    }
+
+    // Evolution API envia mensagens dentro de data.messages[], Baileys envia direto em data
+    // Normalizar para usar o mesmo formato
+    if (data.messages && Array.isArray(data.messages) && data.messages.length > 0) {
+      logger.info(`[WEBHOOK] Evolution format detected - extracting message from array`);
+      data = data.messages[0]; // Pegar primeira mensagem do array
     }
 
     // Ignorar mensagens enviadas por nós
     const fromMe = data.key?.fromMe || data.fromMe || false;
     if (fromMe) {
-      logger.info(`Skipping message from self`);
+      logger.info(`[WEBHOOK] Skipping message from self`);
       return;
     }
 
     // Garantir que temos os dados da key
     if (!data.key) {
-      logger.warn(`No key data in webhook: ${event}`);
+      logger.warn(`[WEBHOOK] No key data in webhook - data structure: ${JSON.stringify(Object.keys(data))}`);
       return;
     }
+    
+    logger.info(`[WEBHOOK] Processing message: id=${data.key.id}, from=${data.key.remoteJid}`);
 
     // Buscar conexão WhatsApp por apiIntegrationId
     let whatsapp = await Whatsapp.findOne({

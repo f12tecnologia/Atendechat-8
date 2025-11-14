@@ -101,6 +101,18 @@ The PostgreSQL database is managed by Replit and includes:
 - **Multi-channel Support** - Support for multiple messaging channels through unified interface
 
 ## Recent Changes
+**November 14, 2025** - Correções Críticas no Webhook Evolution API
+- ✅ **CORREÇÃO 1**: Normalização de event names
+  - Evolution API envia `MESSAGES_UPSERT` (uppercase), código esperava `messages.upsert` (lowercase)
+  - Implementado: `event.toLowerCase().replace(/_/g, ".")`
+- ✅ **CORREÇÃO 2**: Estrutura de payload
+  - Evolution API envia mensagens em `data.messages[]` array
+  - Implementado: Detecção e extração automática do array
+- ✅ **Interface TypeScript** atualizada para suportar ambos formatos (Evolution + Baileys)
+- ✅ **Logs detalhados** adicionados para debug de webhooks
+- 📝 **Status**: Mensagens de texto 1:1 devem funcionar, grupos e mídia precisam de ajustes adicionais
+- 📝 **Próximos passos**: Normalizar estrutura de grupos (`id.remote` vs `key.remoteJid`) e URLs de mídia
+
 **November 14, 2025** - Arquitetura de Providers WhatsApp (Baileys + Evolution API)
 - ✅ **WhatsAppProvider Interface** criada com métodos padronizados (sendText, sendMedia)
 - ✅ **BaileysProvider** implementado - wrapper para código legado Baileys/WhatsApp Web
