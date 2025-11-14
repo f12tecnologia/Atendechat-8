@@ -6,35 +6,73 @@
 
 ## 🎯 Solução: Configurar Webhooks na Evolution API
 
-### Passo 1: Acessar Configurações da Instância
-1. Acesse: `https://evolution.intelfoz.app.br/manager`
-2. Selecione a instância (ex: `Intelfoz_Movel`)
-3. Clique no ícone de **engrenagem** ⚙️
+### ⭐ Método Manual: Via Interface Web (RECOMENDADO - USE ESTE!)
 
-### Passo 2: Configurar Webhook Events
-Na aba **Webhook**, configure:
+#### Passo a Passo com Prints:
 
-```json
-{
-  "url": "https://7b12b638-ed7a-4d8c-89cd-a7aedcd25a36-00-sic5vtm2zqa8.kirk.replit.dev/api-integrations/webhook/1",
-  "events": [
-    "QRCODE_UPDATED",
-    "CONNECTION_UPDATE",
-    "MESSAGES_UPSERT",
-    "MESSAGES_UPDATE",
-    "MESSAGES_DELETE",
-    "SEND_MESSAGE"
-  ]
-}
-```
+1. **Acesse Evolution Manager**  
+   URL: `https://evolution.intelfoz.app.br/manager`
 
-### Passo 3: Eventos Importantes
+2. **Selecione a instância CONECTADA**  
+   📱 `Intelfoz_Movel` (número: 554599053700) ← **USE ESTA!**
+
+3. **Clique no ícone de ENGRENAGEM** ⚙️ (configurações)
+
+4. **Aba "Webhook"** ou "Eventos" (dependendo da versão)
+
+5. **Preencha os campos:**
+
+   **Campo 1: Enable/Ativar Webhook**
+   ```
+   ✅ Marque como: ATIVADO / ENABLED
+   ```
+
+   **Campo 2: Webhook URL**
+   ```
+   📍 Cole EXATAMENTE:
+   https://7b12b638-ed7a-4d8c-89cd-a7aedcd25a36-00-sic5vtm2zqa8.kirk.replit.dev/api-integrations/webhook/1
+   ```
+
+   **Campo 3: Webhook By Events** (pode ter outro nome como "Separar por eventos")
+   ```
+   ⚪ DESMARQUE esta opção (deixe DESATIVADO)
+   ```
+
+   **Campo 4: Eventos / Events** (marque TODOS estes):
+   ```
+   ☑️ QRCODE_UPDATED
+   ☑️ CONNECTION_UPDATE  
+   ☑️ MESSAGES_UPSERT ← 🔥 ESTE É O MAIS IMPORTANTE!
+   ☑️ MESSAGES_UPDATE
+   ☑️ MESSAGES_DELETE
+   ```
+
+6. **Clique em SALVAR** ou **APPLY**
+
+7. **✅ PRONTO!** Agora teste enviando mensagem
+
+---
+
+### 📝 IMPORTANTE: Configurar APENAS na instância conectada!
+
+**USE APENAS:**  
+✅ `Intelfoz_Movel` (número 554599053700) - STATUS: CONECTADO
+
+**NÃO CONFIGURE AINDA:**  
+⏸️ `intelfoz_movel_1763131143017` - status: conectando  
+⏸️ `c680d58f04ed48c97cb13bd3b5b7a05b_1763124756427` - status: conectando
+
+_(Você pode configurar as outras depois que conectarem)_
+
+---
+
+### 🔍 Eventos Importantes - O que cada um faz:
 Ative **obrigatoriamente**:
-- ✅ `MESSAGES_UPSERT` - **Mensagens recebidas** (CRÍTICO!)
+- ✅ `MESSAGES_UPSERT` - **Mensagens recebidas/enviadas** (CRÍTICO!)
 - ✅ `CONNECTION_UPDATE` - Status de conexão
 - ✅ `QRCODE_UPDATED` - QR Code
-- ⚪ `MESSAGES_UPDATE` - Mensagens editadas (opcional)
-- ⚪ `SEND_MESSAGE` - Confirmação de envio (opcional)
+- ⚪ `MESSAGES_UPDATE` - Status mensagens (entregue/lida)
+- ⚪ `MESSAGES_DELETE` - Mensagens deletadas (opcional)
 
 ## 🧪 Como Testar
 

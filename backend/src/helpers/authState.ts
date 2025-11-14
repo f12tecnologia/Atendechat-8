@@ -34,9 +34,15 @@ const authState = async (
   // const getSessionDatabase = await whatsappById(whatsapp.id);
 
   if (whatsapp.session && whatsapp.session !== null) {
-    const result = JSON.parse(whatsapp.session, BufferJSON.reviver);
-    creds = result.creds;
-    keys = result.keys;
+    try {
+      const result = JSON.parse(whatsapp.session, BufferJSON.reviver);
+      creds = result.creds;
+      keys = result.keys;
+    } catch (error) {
+      console.log(`[authState] Invalid session JSON for whatsapp ${whatsapp.id}, initializing new creds`);
+      creds = initAuthCreds();
+      keys = {};
+    }
   } else {
     creds = initAuthCreds();
     keys = {};
