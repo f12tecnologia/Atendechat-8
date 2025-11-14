@@ -4,6 +4,7 @@ import ApiIntegration from "../../models/ApiIntegration";
 import CreateOrUpdateContactService from "../ContactServices/CreateOrUpdateContactService";
 import FindOrCreateTicketService from "../TicketServices/FindOrCreateTicketService";
 import CreateMessageService from "../MessageServices/CreateMessageService";
+import { getIO } from "../../libs/socket";
 import { logger } from "../../utils/logger";
 
 interface EvolutionWebhookData {
@@ -19,6 +20,8 @@ interface EvolutionWebhookData {
     remoteJid?: string;
     fromMe?: boolean;
     status?: string;
+    state?: string;
+    qr?: string;
     pushName?: string;
     message?: any;
     messageType?: string;
@@ -32,6 +35,103 @@ const ProcessEvolutionWebhookService = async (
 ): Promise<void> => {
   try {
     const { event, instance, data } = webhookData;
+    const io = getIO();
+
+    // Buscar a integração Evolution API
+    const apiIntegration = await ApiIntegration.findOne({
+      where: {
+        companyId,
+        type: "evolution",
+        instanceName: instance,
+        isActive: true
+      }
+    });
+
+    if (!apiIntegration) {
+      logger.warn(`Integration not found for instance: ${instance}`);
+      return;
+    }
+
+    // Processar eventos de conexão
+    if (event === "connection.update") {
+      const rawState = data.state || data.status;
+      const state = rawState?.toString().toUpperCase();
+      const qr = data.qr;
+      
+      logger.info(`Evolution connection update: instance=${instance}, state=${state}, rawState=${rawState}`);
+
+      // Buscar conexão WhatsApp por apiIntegrationId (prioritário) ou nome (fallback)
+      let whatsapp = await Whatsapp.findOne({
+        where: {
+          apiIntegrationId: apiIntegration.id,
+          companyId
+        }
+      });
+
+      if (!whatsapp) {
+        // Fallback: buscar por nome (para migração de dados antigos)
+        whatsapp = await Whatsapp.findOne({
+          where: {
+            name: `Evolution - ${apiIntegration.name}`,
+            companyId
+          }
+        });
+        
+        // Se encontrou por nome, atualizar apiIntegrationId
+        if (whatsapp) {
+          await whatsapp.update({ apiIntegrationId: apiIntegration.id });
+        }
+      }
+
+      if (!whatsapp) {
+        // Criar nova conexão vinculada à integração
+        whatsapp = await Whatsapp.create({
+          name: `Evolution - ${apiIntegration.name}`,
+          status: "PENDING",
+          number: instance,
+          isDefault: false,
+          companyId,
+          channel: "whatsapp",
+          apiIntegrationId: apiIntegration.id
+        });
+      }
+
+      // Mapear estados da Evolution API para estados internos
+      const stateMapping: { [key: string]: string } = {
+        "OPEN": "CONNECTED",
+        "CONNECTED": "CONNECTED",
+        "CONNECTED_RESTORE": "CONNECTED",
+        "CLOSE": "DISCONNECTED",
+        "DISCONNECTED": "DISCONNECTED",
+        "CONNECTING": "OPENING",
+        "QR_CODE": "qrcode",
+        "QR": "qrcode"
+      };
+
+      const newStatus = stateMapping[state] || "PENDING";
+      
+      // Atualizar status da conexão
+      await whatsapp.update({
+        status: newStatus,
+        qrcode: qr || "",
+        retries: newStatus === "CONNECTED" ? 0 : whatsapp.retries
+      });
+
+      // Recarregar para obter dados atualizados
+      await whatsapp.reload();
+
+      // Emitir evento socket para atualizar frontend (usando toJSON para serialização)
+      io.to(`company-${companyId}-mainchannel`).emit(
+        `company-${companyId}-whatsappSession`,
+        {
+          action: "update",
+          session: whatsapp.toJSON()
+        }
+      );
+
+      logger.info(`Evolution connection updated: ${instance} -> ${newStatus}`);
+      return;
+    }
 
     // Processar apenas eventos de mensagens recebidas
     if (event !== "messages.upsert") {
@@ -52,37 +152,39 @@ const ProcessEvolutionWebhookService = async (
       return;
     }
 
-    // Buscar a integração Evolution API
-    const apiIntegration = await ApiIntegration.findOne({
-      where: {
-        companyId,
-        type: "evolution",
-        instanceName: instance,
-        isActive: true
-      }
-    });
-
-    if (!apiIntegration) {
-      logger.warn(`Integration not found for instance: ${instance}`);
-      return;
-    }
-
-    // Criar uma conexão WhatsApp virtual para a Evolution API se não existir
+    // Buscar conexão WhatsApp por apiIntegrationId
     let whatsapp = await Whatsapp.findOne({
       where: {
-        name: `Evolution - ${apiIntegration.name}`,
+        apiIntegrationId: apiIntegration.id,
         companyId
       }
     });
 
     if (!whatsapp) {
+      // Fallback: buscar por nome (para migração de dados antigos)
+      whatsapp = await Whatsapp.findOne({
+        where: {
+          name: `Evolution - ${apiIntegration.name}`,
+          companyId
+        }
+      });
+      
+      // Se encontrou por nome, atualizar apiIntegrationId
+      if (whatsapp) {
+        await whatsapp.update({ apiIntegrationId: apiIntegration.id });
+      }
+    }
+
+    if (!whatsapp) {
+      // Criar nova conexão vinculada à integração
       whatsapp = await Whatsapp.create({
         name: `Evolution - ${apiIntegration.name}`,
         status: "CONNECTED",
         number: instance,
         isDefault: false,
         companyId,
-        channel: "whatsapp"
+        channel: "whatsapp",
+        apiIntegrationId: apiIntegration.id
       });
     }
 

@@ -213,7 +213,17 @@ const Connections = () => {
         const renderActionButtons = whatsApp => {
                 return (
                         <>
-                                {whatsApp.status === "qrcode" && (
+                                {whatsApp.status === "qrcode" && whatsApp.apiIntegrationId && (
+                                        <Button
+                                                size="small"
+                                                variant="contained"
+                                                color="primary"
+                                                onClick={() => handleOpenConnectInstanceModal(whatsApp)}
+                                        >
+                                                Conectar
+                                        </Button>
+                                )}
+                                {whatsApp.status === "qrcode" && !whatsApp.apiIntegrationId && (
                                         <Button
                                                 size="small"
                                                 variant="contained"

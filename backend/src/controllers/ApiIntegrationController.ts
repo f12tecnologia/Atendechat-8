@@ -172,8 +172,15 @@ export const getConnectionStatus = async (req: Request, res: Response): Promise<
       
       logger.info(`[getConnectionStatus] Instance status:`, statusData);
 
+      // Status válidos que indicam conexão ativa (em UPPERCASE)
+      const connectedStates = ["OPEN", "CONNECTED", "CONNECTED_RESTORE"];
+      const rawState = statusData.state || statusData.instance?.state;
+      const state = rawState?.toString().toUpperCase();
+      
+      logger.info(`[getConnectionStatus] State normalized: ${rawState} → ${state}`);
+      
       // Se já está conectada, retorna o status
-      if (statusData.state === "open" || statusData.instance?.state === "open") {
+      if (state && connectedStates.includes(state)) {
         return res.status(200).json({
           connected: true,
           status: statusData,
