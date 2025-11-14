@@ -2,5 +2,8 @@
   "devDependencies": {
     "nodemon": "^3.1.7",
     "ts-node": "^10.9.2"
+  },
+  "dependencies": {
+    "@google-cloud/dialogflow": "^7.4.0"
   }
 }
