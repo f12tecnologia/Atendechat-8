@@ -212,6 +212,35 @@ class EvolutionApiService {
     }
   }
 
+  async getProfilePicture(instanceName: string, contactNumber: string): Promise<string | null> {
+    try {
+      const response = await this.client.get(
+        `/chat/fetchProfilePictureUrl/${instanceName}`,
+        {
+          params: {
+            number: contactNumber
+          }
+        }
+      );
+      
+      const profileUrl = response.data?.profilePictureUrl || response.data?.url || null;
+      
+      if (profileUrl) {
+        logger.info(`Evolution API - Profile picture fetched for ${contactNumber}`);
+      }
+      
+      return profileUrl;
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        logger.info(`Evolution API - No profile picture found for ${contactNumber}`);
+        return null;
+      }
+      
+      logger.warn(`Evolution API - Error fetching profile picture for ${contactNumber}:`, error.message);
+      return null;
+    }
+  }
+
   static async getInstanceFromIntegration(
     integrationId: number,
     companyId: number
