@@ -1,12 +1,7 @@
 import { WAMessage } from "baileys";
-import WALegacySocket from "baileys"
-import * as Sentry from "@sentry/node";
-import AppError from "../../errors/AppError";
-import GetTicketWbot from "../../helpers/GetTicketWbot";
 import Message from "../../models/Message";
 import Ticket from "../../models/Ticket";
-
-import formatBody from "../../helpers/Mustache";
+import ProviderFactory from "./providers/ProviderFactory";
 
 interface Request {
   body: string;
@@ -18,51 +13,16 @@ const SendWhatsAppMessage = async ({
   body,
   ticket,
   quotedMsg
-}: Request): Promise<WAMessage> => {
-  let options = {};
-  const wbot = await GetTicketWbot(ticket);
-  const number = `${ticket.contact.number}@${
-    ticket.isGroup ? "g.us" : "s.whatsapp.net"
-  }`;
+}: Request): Promise<WAMessage | any> => {
+  const provider = await ProviderFactory.getProvider(ticket);
+  
+  const sentMessage = await provider.sendText({
+    body,
+    ticket,
+    quotedMsg
+  });
 
-  if (quotedMsg) {
-      const chatMessages = await Message.findOne({
-        where: {
-          id: quotedMsg.id
-        }
-      });
-
-      if (chatMessages) {
-        const msgFound = JSON.parse(chatMessages.dataJson);
-
-        options = {
-          quoted: {
-            key: msgFound.key,
-            message: {
-              extendedTextMessage: msgFound.message.extendedTextMessage
-            }
-          }
-        };
-      }
-    
-  }
-
-  try {
-    const sentMessage = await wbot.sendMessage(number,{
-        text: formatBody(body, ticket.contact)
-      },
-      {
-        ...options
-      }
-    );
-
-    await ticket.update({ lastMessage: formatBody(body, ticket.contact) });
-    return sentMessage;
-  } catch (err) {
-    Sentry.captureException(err);
-    console.log(err);
-    throw new AppError("ERR_SENDING_WAPP_MSG");
-  }
+  return sentMessage;
 };
 
 export default SendWhatsAppMessage;

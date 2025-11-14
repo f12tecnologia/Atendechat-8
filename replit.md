@@ -101,6 +101,23 @@ The PostgreSQL database is managed by Replit and includes:
 - **Multi-channel Support** - Support for multiple messaging channels through unified interface
 
 ## Recent Changes
+**November 14, 2025** - Arquitetura de Providers WhatsApp (Baileys + Evolution API)
+- ✅ **WhatsAppProvider Interface** criada com métodos padronizados (sendText, sendMedia)
+- ✅ **BaileysProvider** implementado - wrapper para código legado Baileys/WhatsApp Web
+  - Preserva comportamentos como quoted replies, conversão de áudio via ffmpeg
+  - Mantém compatibilidade total com conexões WhatsApp Web existentes
+- ✅ **EvolutionProvider** implementado - usa EvolutionApiService
+  - Suporta envio de texto e mídia via Evolution API
+  - Converte arquivos para base64 automaticamente
+  - Determina tipo de mídia (image/video/audio/document) dinamicamente
+- ✅ **ProviderFactory** criado - decide automaticamente qual provider usar
+  - Se `ticket.whatsapp.apiIntegrationId` existe → EvolutionProvider
+  - Caso contrário → BaileysProvider (comportamento padrão)
+- ✅ **SendWhatsAppMessage** refatorado para usar ProviderFactory
+- ✅ **SendWhatsAppMedia** refatorado para usar ProviderFactory
+- ✅ **Backend compilado** com sucesso e rodando sem erros
+- 📝 **Próximos passos**: Expandir ProcessEvolutionWebhookService para normalizar mensagens recebidas
+
 **November 8, 2025** - Correções Críticas: QR Code + Webhook Evolution API
 - ✅ **CORREÇÃO CRÍTICA 1**: BACKEND_URL configurado corretamente
   - Alterado de `http://localhost:8080` para URL pública do Replit

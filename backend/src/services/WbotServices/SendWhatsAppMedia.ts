@@ -10,6 +10,8 @@ import Ticket from "../../models/Ticket";
 import { lookup } from "mime-types";
 import formatBody from "../../helpers/Mustache";
 
+import ProviderFactory from "./providers/ProviderFactory";
+
 interface Request {
   media: Express.Multer.File;
   ticket: Ticket;
@@ -118,74 +120,16 @@ const SendWhatsAppMedia = async ({
   media,
   ticket,
   body
-}: Request): Promise<WAMessage> => {
-  try {
-    const wbot = await GetTicketWbot(ticket);
+}: Request): Promise<WAMessage | any> => {
+  const provider = await ProviderFactory.getProvider(ticket);
+  
+  const sentMessage = await provider.sendMedia({
+    media,
+    ticket,
+    body
+  });
 
-    const pathMedia = media.path;
-    const typeMessage = media.mimetype.split("/")[0];
-    let options: AnyMessageContent;
-    const bodyMessage = formatBody(body, ticket.contact);
-
-    if (typeMessage === "video") {
-      options = {
-        video: fs.readFileSync(pathMedia),
-        caption: bodyMessage,
-        fileName: media.originalname
-        // gifPlayback: true
-      };
-    } else if (typeMessage === "audio") {
-      const typeAudio = media.originalname.includes("audio-record-site");
-      if (typeAudio) {
-        const convert = await processAudio(media.path);
-        options = {
-          audio: fs.readFileSync(convert),
-          mimetype: typeAudio ? "audio/mp4" : media.mimetype,
-          ptt: true
-        };
-      } else {
-        const convert = await processAudioFile(media.path);
-        options = {
-          audio: fs.readFileSync(convert),
-          mimetype: typeAudio ? "audio/mp4" : media.mimetype
-        };
-      }
-    } else if (typeMessage === "document" || typeMessage === "text") {
-      options = {
-        document: fs.readFileSync(pathMedia),
-        caption: bodyMessage,
-        fileName: media.originalname,
-        mimetype: media.mimetype
-      };
-    } else if (typeMessage === "application") {
-      options = {
-        document: fs.readFileSync(pathMedia),
-        caption: bodyMessage,
-        fileName: media.originalname,
-        mimetype: media.mimetype
-      };
-    } else {
-      options = {
-        image: fs.readFileSync(pathMedia),
-        caption: bodyMessage
-      };
-    }
-
-    const sentMessage = await wbot.sendMessage(
-      `${ticket.contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
-      {
-        ...options
-      }
-    );
-
-    await ticket.update({ lastMessage: bodyMessage });
-
-    return sentMessage;
-  } catch (err) {
-    Sentry.captureException(err);
-    console.log(err);
-    throw new AppError("ERR_SENDING_WAPP_MSG");
-  }
+  return sentMessage;
 };
 
 export default SendWhatsAppMedia;
