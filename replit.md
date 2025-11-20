@@ -219,10 +219,29 @@ The PostgreSQL database is managed by Replit and includes:
 - ✅ Fixed frontend-backend proxy communication
 
 ## Deployment
-The application is configured for VM deployment with the following setup:
-- **Build**: Compiles both backend TypeScript and frontend React app
-- **Run**: Starts Redis, backend server, and serves frontend on port 5000
-- The deployment uses a VM instance to maintain state for the queue system and WhatsApp sessions
+The application is configured for **VM deployment** to maintain state for WhatsApp sessions and queue processing:
+
+### Build Configuration
+- **Script**: `build.sh`
+- **Process**:
+  1. Backend: Installs dependencies + compiles TypeScript → `backend/dist/`
+  2. Frontend: Installs dependencies + builds React app (with NODE_OPTIONS) → `frontend/build/`
+- **Environment**: `NODE_OPTIONS=--openssl-legacy-provider` set automatically for React Scripts 3.4
+
+### Production Startup
+- **Script**: `start-production.sh`
+- **Services**:
+  1. Redis (port 6379) - Background daemon
+  2. Backend (port 8080) - Node.js API server
+  3. Frontend (port 5000) - Static file server using `serve`
+
+### Deployment Type: VM
+- Maintains WhatsApp session state
+- Keeps Redis queue data in memory
+- Runs continuously for real-time messaging
+- Supports background job processing
+
+See `DEPLOYMENT.md` for complete deployment guide and troubleshooting.
 
 ## Important Notes
 

@@ -11,6 +11,10 @@ localPort = 5000
 externalPort = 80
 
 [[ports]]
+localPort = 5001
+externalPort = 3001
+
+[[ports]]
 localPort = 6379
 externalPort = 3000
 
@@ -60,5 +64,5 @@ outputType = "console"
 
 [deployment]
 deploymentTarget = "vm"
-run = ["bash", "-c", "redis-server --daemonize yes --port 6379 && cd backend && npm start & cd frontend && npx serve -s build -l 5000"]
-build = ["bash", "-c", "cd backend && npm run build && cd ../frontend && npm run build"]
+run = ["bash", "start-production.sh"]
+build = ["bash", "build.sh"]

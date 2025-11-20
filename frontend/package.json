@@ -62,6 +62,7 @@
     "react-trello": "^2.2.11",
     "reactflow": "^11.11.4",
     "recharts": "^2.0.2",
+    "serve": "^14.2.5",
     "socket.io-client": "^4.7.5",
     "styled-components": "^5.3.5",
     "text-mask-addons": "^3.8.0",
