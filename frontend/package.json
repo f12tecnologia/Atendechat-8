@@ -74,7 +74,7 @@
     "zustand": "^3.7.2"
   },
   "scripts": {
-    "start": "PORT=3000 react-scripts start",
+    "start": "NODE_OPTIONS=--openssl-legacy-provider PORT=5000 HOST=0.0.0.0 DANGEROUSLY_DISABLE_HOST_CHECK=true react-scripts start",
     "build": "NODE_OPTIONS=--openssl-legacy-provider GENERATE_SOURCEMAP=false react-scripts build",
     "builddev": "react-scripts build",
     "test": "react-scripts test",
