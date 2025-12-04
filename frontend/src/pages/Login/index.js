@@ -95,9 +95,13 @@ const Login = () => {
 		setUser({ ...user, [e.target.name]: e.target.value });
 	};
 
-	const handlSubmit = e => {
+	const handlSubmit = async e => {
 		e.preventDefault();
-		handleLogin(user);
+		try {
+			await handleLogin(user);
+		} catch (err) {
+			console.error("Login error:", err);
+		}
 	};
 
 	const handlemenuLanguage = ( event ) => {

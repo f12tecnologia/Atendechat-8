@@ -141,29 +141,16 @@ const useAuth = () => {
     setLoading(true);
 
     try {
+      console.log("Attempting login with:", userData.email);
       const { data } = await api.post("/auth/login", userData);
+      console.log("Login response:", data);
+
       const {
         user: { companyId, id, company },
       } = data;
-
-      if (has(company, "settings") && isArray(company.settings)) {
-        const setting = company.settings.find(
-          (s) => s.key === "campaignsEnabled"
-        );
-        if (setting && setting.value === "true") {
-          localStorage.setItem("cshow", null); //regra pra exibir campanhas
-        }
-      }
-
-      moment.locale("pt-br");
-      const dueDate = data.user.company.dueDate;
-      const hoje = moment(moment()).format("DD/MM/yyyy");
-      const vencimento = moment(dueDate).format("DD/MM/yyyy");
-
-      var diff = moment(dueDate).diff(moment(moment()).format());
-
-      var before = moment(moment().format()).isBefore(dueDate);
-      var dias = moment.duration(diff).asDays();
+      const vencimento = company.dueDate;
+      var before = moment(vencimento, "YYYY-MM-DD").isBefore();
+      var dias = moment(vencimento, "YYYY-MM-DD").diff(moment(), "days");
 
       if (before === true) {
         localStorage.setItem("token", JSON.stringify(data.token));
@@ -188,9 +175,8 @@ const useAuth = () => {
 Entre em contato com o Suporte para mais informações! `);
         setLoading(false);
       }
-
-      //quebra linha
     } catch (err) {
+      console.error("Login error details:", err.response || err);
       toastError(err);
       setLoading(false);
     }

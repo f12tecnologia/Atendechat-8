@@ -33,16 +33,25 @@ const AuthUserService = async ({
   email,
   password
 }: Request): Promise<Response> => {
+  console.log(`[AUTH] Attempting login for email: ${email}`);
+  
   const user = await User.findOne({
     where: { email },
     include: ["queues", { model: Company, include: [{ model: Setting }] }]
   });
 
   if (!user) {
+    console.log(`[AUTH] User not found: ${email}`);
     throw new AppError("ERR_USER_DONT_EXISTS", 401);
   }
 
-  if (!(await user.checkPassword(password))) {
+  console.log(`[AUTH] User found: ${user.name} (ID: ${user.id})`);
+  
+  const passwordValid = await user.checkPassword(password);
+  console.log(`[AUTH] Password validation result: ${passwordValid}`);
+  
+  if (!passwordValid) {
+    console.log(`[AUTH] Invalid password for user: ${email}`);
     throw new AppError("ERR_INVALID_CREDENTIALS", 401);
   }
 
@@ -50,6 +59,8 @@ const AuthUserService = async ({
   const refreshToken = createRefreshToken(user);
 
   const serializedUser = await SerializeUser(user);
+
+  console.log(`[AUTH] Login successful for user: ${email}`);
 
   return {
     serializedUser,
