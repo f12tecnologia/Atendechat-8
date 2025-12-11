@@ -7,6 +7,9 @@ import { SendRefreshToken } from "../helpers/SendRefreshToken";
 import { RefreshTokenService } from "../services/AuthServices/RefreshTokenService";
 import FindUserFromToken from "../services/AuthServices/FindUserFromToken";
 import User from "../models/User";
+import Company from "../models/Company";
+import Plan from "../models/Plan";
+import moment from "moment";
 
 export const store = async (req: Request, res: Response): Promise<Response> => {
   const { email, password } = req.body;
@@ -43,6 +46,22 @@ export const update = async (
 
   if (!token) {
     throw new AppError("ERR_SESSION_EXPIRED", 401);
+  }
+
+  const company = await Company.findByPk(req.user.companyId, {
+    include: [{ model: Plan, as: "plan" }]
+  });
+
+  if (company && company.dueDate) {
+    const dateToday = moment().format("YYYY-MM-DD");
+    const dueDate = moment(company.dueDate).format("YYYY-MM-DD");
+
+    if (moment(dueDate).isBefore(dateToday)) {
+      throw new AppError(
+        `Opss! Sua assinatura venceu ${dueDate}.\nEntre em contato com o Suporte para mais informações!`,
+        401
+      );
+    }
   }
 
   const { user, newToken, refreshToken } = await RefreshTokenService(
