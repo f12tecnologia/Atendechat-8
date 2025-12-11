@@ -53,12 +53,12 @@ export const update = async (
   });
 
   if (company && company.dueDate) {
-    const dateToday = moment().format("YYYY-MM-DD");
-    const dueDate = moment(company.dueDate).format("YYYY-MM-DD");
+    const today = moment().startOf('day');
+    const dueDate = moment(company.dueDate).startOf('day');
 
-    if (moment(dueDate).isBefore(dateToday)) {
+    if (dueDate.isBefore(today)) {
       throw new AppError(
-        `Opss! Sua assinatura venceu ${dueDate}.\nEntre em contato com o Suporte para mais informações!`,
+        `Opss! Sua assinatura venceu em ${dueDate.format("DD/MM/YYYY")}.\nEntre em contato com o Suporte para mais informações!`,
         401
       );
     }

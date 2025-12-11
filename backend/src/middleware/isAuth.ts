@@ -38,12 +38,12 @@ const isAuth = async (req: Request, res: Response, next: NextFunction): Promise<
     }
 
     if (company.dueDate) {
-      const dueDate = moment(company.dueDate).format("YYYY-MM-DD");
-      const today = moment().format("YYYY-MM-DD");
+      const dueDate = moment(company.dueDate).startOf('day');
+      const today = moment().startOf('day');
 
-      if (moment(dueDate).isBefore(today)) {
+      if (dueDate.isBefore(today)) {
         throw new AppError(
-          `Opss! Sua assinatura venceu ${dueDate}.\nEntre em contato com o Suporte para mais informações!`,
+          `Opss! Sua assinatura venceu em ${dueDate.format("DD/MM/YYYY")}.\nEntre em contato com o Suporte para mais informações!`,
           401
         );
       }
