@@ -4,6 +4,7 @@
     "ts-node": "^10.9.2"
   },
   "dependencies": {
-    "@google-cloud/dialogflow": "^7.4.0"
+    "@google-cloud/dialogflow": "^7.4.0",
+    "http-proxy-middleware": "^2.0.9"
   }
 }
