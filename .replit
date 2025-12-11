@@ -66,6 +66,15 @@ waitForPort = 8080
 [workflows.workflow.metadata]
 outputType = "console"
 
+[[workflows.workflow]]
+name = "Start Frontend"
+author = 45814161
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd frontend && rm -rf node_modules && npm install && npm start"
+
 [deployment]
 deploymentTarget = "vm"
 run = ["bash", "start-production.sh"]
