@@ -57,10 +57,15 @@ const useAuth = () => {
         isRefreshing = true;
 
         try {
-          const { data } = await api.post("/auth/refresh_token");
+          const storedRefreshToken = localStorage.getItem("refreshToken");
+          const refreshTokenValue = storedRefreshToken ? JSON.parse(storedRefreshToken) : null;
+          const { data } = await api.post("/auth/refresh_token", { refreshToken: refreshTokenValue });
 
           if (data) {
             localStorage.setItem("token", JSON.stringify(data.token));
+            if (data.refreshToken) {
+              localStorage.setItem("refreshToken", JSON.stringify(data.refreshToken));
+            }
             api.defaults.headers.Authorization = `Bearer ${data.token}`;
 
             failedRequestsQueue.forEach((request) => {
@@ -77,7 +82,9 @@ const useAuth = () => {
           failedRequestsQueue = [];
 
           localStorage.removeItem("token");
+          localStorage.removeItem("refreshToken");
           localStorage.removeItem("companyId");
+          localStorage.removeItem("userId");
           api.defaults.headers.Authorization = undefined;
           setIsAuth(false);
 
@@ -92,7 +99,9 @@ const useAuth = () => {
         (error?.response?.status === 403 && originalRequest._retry)
       ) {
         localStorage.removeItem("token");
+        localStorage.removeItem("refreshToken");
         localStorage.removeItem("companyId");
+        localStorage.removeItem("userId");
         api.defaults.headers.Authorization = undefined;
         setIsAuth(false);
       }
@@ -105,15 +114,23 @@ const useAuth = () => {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
+    const refreshToken = localStorage.getItem("refreshToken");
     (async () => {
-      if (token) {
+      if (token && refreshToken) {
         try {
-          const { data } = await api.post("/auth/refresh_token");
+          const { data } = await api.post("/auth/refresh_token", { refreshToken: JSON.parse(refreshToken) });
           api.defaults.headers.Authorization = `Bearer ${data.token}`;
+          localStorage.setItem("token", JSON.stringify(data.token));
+          if (data.refreshToken) {
+            localStorage.setItem("refreshToken", JSON.stringify(data.refreshToken));
+          }
           setIsAuth(true);
           setUser(data.user);
         } catch (err) {
-          toastError(err);
+          localStorage.removeItem("token");
+          localStorage.removeItem("refreshToken");
+          localStorage.removeItem("companyId");
+          localStorage.removeItem("userId");
         }
       }
       setLoading(false);
@@ -154,6 +171,7 @@ const useAuth = () => {
 
       if (isValid) {
         localStorage.setItem("token", JSON.stringify(data.token));
+        localStorage.setItem("refreshToken", JSON.stringify(data.refreshToken));
         localStorage.setItem("companyId", companyId);
         localStorage.setItem("userId", id);
         localStorage.setItem("companyDueDate", vencimento);
@@ -190,6 +208,7 @@ Entre em contato com o Suporte para mais informações! `);
       setIsAuth(false);
       setUser({});
       localStorage.removeItem("token");
+      localStorage.removeItem("refreshToken");
       localStorage.removeItem("companyId");
       localStorage.removeItem("userId");
       localStorage.removeItem("cshow");

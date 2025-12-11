@@ -33,6 +33,7 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
 
   return res.status(200).json({
     token,
+    refreshToken,
     user: serializedUser
   });
 };
@@ -42,13 +43,18 @@ export const update = async (
   res: Response
 ): Promise<Response> => {
 
-  const token: string = req.cookies.jrt;
+  const token: string = req.cookies.jrt || req.body.refreshToken;
 
   if (!token) {
     throw new AppError("ERR_SESSION_EXPIRED", 401);
   }
 
-  const company = await Company.findByPk(req.user.companyId, {
+  const { user, newToken, refreshToken } = await RefreshTokenService(
+    res,
+    token
+  );
+
+  const company = await Company.findByPk(user.companyId, {
     include: [{ model: Plan, as: "plan" }]
   });
 
@@ -64,14 +70,9 @@ export const update = async (
     }
   }
 
-  const { user, newToken, refreshToken } = await RefreshTokenService(
-    res,
-    token
-  );
-
   SendRefreshToken(res, refreshToken);
 
-  return res.json({ token: newToken, user });
+  return res.json({ token: newToken, refreshToken, user });
 };
 
 export const me = async (req: Request, res: Response): Promise<Response> => {
