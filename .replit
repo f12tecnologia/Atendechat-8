@@ -50,13 +50,13 @@ waitForPort = 5000
 name = "backend"
 author = "agent"
 
+[workflows.workflow.metadata]
+outputType = "console"
+
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "./start-server.sh"
 waitForPort = 8080
-
-[workflows.workflow.metadata]
-outputType = "console"
 
 [[workflows.workflow]]
 name = "Start Frontend"
