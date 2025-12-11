@@ -149,10 +149,10 @@ const useAuth = () => {
         user: { companyId, id, company },
       } = data;
       const vencimento = company.dueDate;
-      var before = moment(vencimento, "YYYY-MM-DD").isBefore();
       var dias = moment(vencimento, "YYYY-MM-DD").diff(moment(), "days");
+      var isValid = dias >= 0; // true if subscription is still valid (not expired)
 
-      if (before === true) {
+      if (isValid) {
         localStorage.setItem("token", JSON.stringify(data.token));
         localStorage.setItem("companyId", companyId);
         localStorage.setItem("userId", id);
