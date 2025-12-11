@@ -42,8 +42,10 @@ class Company extends Model<Company> {
   @Column
   status: boolean;
 
-  @Column
-  dueDate: string;
+  @Column({
+    type: DataType.DATEONLY
+  })
+  dueDate: Date;
 
   @Column
   recurrence: string;

@@ -53,8 +53,8 @@ export const update = async (
   });
 
   if (company && company.dueDate) {
-    const today = moment().startOf('day');
-    const dueDate = moment(company.dueDate).startOf('day');
+    const dueDate = moment(company.dueDate, "YYYY-MM-DD");
+    const today = moment().format("YYYY-MM-DD");
 
     if (dueDate.isBefore(today)) {
       throw new AppError(

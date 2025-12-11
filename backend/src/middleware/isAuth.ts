@@ -38,8 +38,8 @@ const isAuth = async (req: Request, res: Response, next: NextFunction): Promise<
     }
 
     if (company.dueDate) {
-      const dueDate = moment(company.dueDate).startOf('day');
-      const today = moment().startOf('day');
+      const dueDate = moment(company.dueDate, "YYYY-MM-DD");
+      const today = moment().format("YYYY-MM-DD");
 
       if (dueDate.isBefore(today)) {
         throw new AppError(
