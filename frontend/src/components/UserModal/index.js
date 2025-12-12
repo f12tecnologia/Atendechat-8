@@ -88,7 +88,7 @@ const UserModal = ({ open, onClose, userId }) => {
 		let isMounted = true;
 
 		const fetchUser = async () => {
-			if (!userId) return;
+			if (!userId || !open) return;
 			try {
 				const { data } = await api.get(`/users/${userId}`);
 				if (isMounted) {
@@ -106,7 +106,9 @@ const UserModal = ({ open, onClose, userId }) => {
 			}
 		};
 
-		fetchUser();
+		if (open) {
+			fetchUser();
+		}
 
 		return () => {
 			isMounted = false;

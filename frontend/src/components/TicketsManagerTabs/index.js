@@ -227,7 +227,7 @@ const TicketsManagerTabs = () => {
       <NewTicketModal
         modalOpen={newTicketModalOpen}
         onClose={(ticket) => {
-          
+
           handleCloseOrOpenTicket(ticket);
         }}
       />

@@ -61,9 +61,10 @@ api.interceptors.response.use(
 			const refreshToken = localStorage.getItem("refreshToken");
 
 			if (!refreshToken) {
-				localStorage.removeItem("token");
-				localStorage.removeItem("userId");
-				localStorage.removeItem("refreshToken");
+				console.log("No refresh token available, redirecting to login");
+				localStorage.clear();
+				isRefreshing = false;
+				processQueue(new Error("Session expired"), null);
 				window.location.href = "/login";
 				return Promise.reject(error);
 			}
@@ -84,10 +85,10 @@ api.interceptors.response.use(
 					return api(originalRequest);
 				}
 			} catch (refreshError) {
+				console.error("Refresh token error:", refreshError);
 				processQueue(refreshError, null);
-				localStorage.removeItem("token");
-				localStorage.removeItem("userId");
-				localStorage.removeItem("refreshToken");
+				localStorage.clear();
+				isRefreshing = false;
 				window.location.href = "/login";
 				return Promise.reject(refreshError);
 			} finally {
