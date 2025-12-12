@@ -15,28 +15,11 @@ else
 fi
 echo ""
 
-# Start backend on port 8080
-echo "🖥️  Starting backend on port 8080..."
+# Set production environment
+export NODE_ENV=production
+export PORT=5000
+
+# Start backend on port 5000 (serves both API and frontend static files)
+echo "🖥️  Starting backend on port 5000 (API + Frontend)..."
 cd backend
-node dist/server.js &
-BACKEND_PID=$!
-cd ..
-echo "✅ Backend started (PID: $BACKEND_PID)"
-echo ""
-
-# Start frontend on port 5000
-echo "🌐 Starting frontend on port 5000..."
-cd frontend
-npx serve -s build -l 5000 -n &
-FRONTEND_PID=$!
-cd ..
-echo "✅ Frontend started (PID: $FRONTEND_PID)"
-echo ""
-
-echo "✅ Atendechat is running!"
-echo "   Frontend: http://0.0.0.0:5000"
-echo "   Backend:  http://localhost:8080"
-echo ""
-
-# Wait for both processes
-wait
+node dist/server.js
