@@ -32,7 +32,6 @@
     "gn-api-sdk-node": "^3.0.2",
     "i18next": "^19.8.2",
     "i18next-browser-languagedetector": "^6.0.1",
-    "jsonwebtoken": "^9.0.2",
     "markdown-to-jsx": "^7.1.0",
     "material-ui-color": "^1.2.0",
     "mic-recorder-to-mp3": "^2.2.2",
