@@ -5,7 +5,7 @@ import Button from "@material-ui/core/Button";
 import CssBaseline from "@material-ui/core/CssBaseline";
 import TextField from "@material-ui/core/TextField";
 import Link from "@material-ui/core/Link";
-import Grid from "@material-ui/core/Grid"; 
+import Grid from "@material-ui/core/Grid";
 import Box from "@material-ui/core/Box";
 import Typography from "@material-ui/core/Typography";
 import { makeStyles } from "@material-ui/core/styles";
@@ -59,7 +59,7 @@ const useStyles = makeStyles(theme => ({
 		borderRadius: "12.5px",
 	},
 	avatar: {
-		margin: theme.spacing(1),  
+		margin: theme.spacing(1),
 		backgroundColor: theme.palette.secondary.main,
 	},
 	form: {
@@ -98,7 +98,15 @@ const Login = () => {
 	const handlSubmit = async e => {
 		e.preventDefault();
 		try {
-			await handleLogin(user);
+			const { data } = await api.post("/auth/login", user);
+			console.log("Login response:", data);
+			localStorage.setItem("token", JSON.stringify(data.token));
+			localStorage.setItem("userId", data.user.id);
+			if (data.refreshToken) {
+				localStorage.setItem("refreshToken", data.refreshToken);
+			}
+			api.defaults.headers.Authorization = `Bearer ${data.token}`;
+			handleLogin(data.user);
 		} catch (err) {
 			console.error("Login error:", err);
 		}
@@ -113,7 +121,7 @@ const Login = () => {
 		setAnchorElLanguage(null);
 		setMenuLanguageOpen(false);
 	}
-	
+
 	return (
 		<div className={classes.root}>
 		<div className={classes.languageControl}>
@@ -183,7 +191,7 @@ const Login = () => {
 						onChange={handleChangeInput}
 						autoComplete="current-password"
 					/>
-					
+
 					{/* <Grid container justify="flex-end">
 					  <Grid item xs={6} style={{ textAlign: "right" }}>
 						<Link component={RouterLink} to="/forgetpsw" variant="body2">
@@ -191,7 +199,7 @@ const Login = () => {
 						</Link>
 					  </Grid>
 					</Grid>*/}
-					
+
 					<Button
 						type="submit"
 						fullWidth
@@ -214,7 +222,7 @@ const Login = () => {
 						</Grid>
 					</Grid> }
 				</form>
-			
+
 			</div>
 			<Box mt={8}><Copyright /></Box>
 		</Container>

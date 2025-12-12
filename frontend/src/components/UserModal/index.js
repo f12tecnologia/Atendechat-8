@@ -85,22 +85,32 @@ const UserModal = ({ open, onClose, userId }) => {
 	const { loading, whatsApps } = useWhatsApps();
 
 	useEffect(() => {
+		let isMounted = true;
+
 		const fetchUser = async () => {
 			if (!userId) return;
 			try {
 				const { data } = await api.get(`/users/${userId}`);
-				setUser(prevState => {
-					return { ...prevState, ...data };
-				});
-				const userQueueIds = data.queues?.map(queue => queue.id);
-				setSelectedQueueIds(userQueueIds);
-				setWhatsappId(data.whatsappId ? data.whatsappId : '');
+				if (isMounted) {
+					setUser(prevState => {
+						return { ...prevState, ...data };
+					});
+					const userQueueIds = data.queues?.map(queue => queue.id);
+					setSelectedQueueIds(userQueueIds);
+					setWhatsappId(data.whatsappId ? data.whatsappId : '');
+				}
 			} catch (err) {
-				toastError(err);
+				if (isMounted) {
+					toastError(err);
+				}
 			}
 		};
 
 		fetchUser();
+
+		return () => {
+			isMounted = false;
+		};
 	}, [userId, open]);
 
 	const handleClose = () => {
@@ -249,15 +259,15 @@ const UserModal = ({ open, onClose, userId }) => {
 										</FormControl>
 									)}
 								/>
-								
-								
-								
+
+
+
 								<div className={classes.divider}>
 									<span className={classes.dividerText}>
 										{i18n.t("userModal.labels.liberations")}
 									</span>
 								</div>
-								
+
 								<Can
 									role={loggedInUser.profile}
 									perform="user-modal:editProfile"
@@ -291,7 +301,7 @@ const UserModal = ({ open, onClose, userId }) => {
 
 									)}
 								/>
-								
+
 							</DialogContent>
 							<DialogActions>
 								<Button

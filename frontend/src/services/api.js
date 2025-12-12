@@ -22,6 +22,83 @@ api.interceptors.request.use(
 	}
 );
 
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error, token = null) => {
+	failedQueue.forEach(prom => {
+		if (error) {
+			prom.reject(error);
+		} else {
+			prom.resolve(token);
+		}
+	});
+	failedQueue = [];
+};
+
+api.interceptors.response.use(
+	response => response,
+	async error => {
+		const originalRequest = error.config;
+
+		if (error.response?.status === 401 && !originalRequest._retry) {
+			if (isRefreshing) {
+				return new Promise((resolve, reject) => {
+					failedQueue.push({ resolve, reject });
+				})
+					.then(token => {
+						originalRequest.headers.Authorization = `Bearer ${token}`;
+						return api(originalRequest);
+					})
+					.catch(err => {
+						return Promise.reject(err);
+					});
+			}
+
+			originalRequest._retry = true;
+			isRefreshing = true;
+
+			const refreshToken = localStorage.getItem("refreshToken");
+
+			if (!refreshToken) {
+				localStorage.removeItem("token");
+				localStorage.removeItem("userId");
+				localStorage.removeItem("refreshToken");
+				window.location.href = "/login";
+				return Promise.reject(error);
+			}
+
+			try {
+				const { data } = await openApi.post("/auth/refresh_token", {
+					refreshToken
+				});
+
+				if (data.token) {
+					localStorage.setItem("token", data.token);
+					if (data.refreshToken) {
+						localStorage.setItem("refreshToken", data.refreshToken);
+					}
+					api.defaults.headers.Authorization = `Bearer ${data.token}`;
+					originalRequest.headers.Authorization = `Bearer ${data.token}`;
+					processQueue(null, data.token);
+					return api(originalRequest);
+				}
+			} catch (refreshError) {
+				processQueue(refreshError, null);
+				localStorage.removeItem("token");
+				localStorage.removeItem("userId");
+				localStorage.removeItem("refreshToken");
+				window.location.href = "/login";
+				return Promise.reject(refreshError);
+			} finally {
+				isRefreshing = false;
+			}
+		}
+
+		return Promise.reject(error);
+	}
+);
+
 export const openApi = axios.create({
   baseURL: process.env.REACT_APP_BACKEND_URL || "http://localhost:8080",
   headers: {
