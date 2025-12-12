@@ -48,13 +48,16 @@ app.use(
       // Check if origin is in allowed list or matches Replit domains
       if (corsOrigins.some(allowed => origin.includes(allowed as string)) || 
           origin.includes('.replit.dev') || 
-          origin.includes('.replit.app')) {
+          origin.includes('.replit.app') ||
+          origin.includes('localhost')) {
         return callback(null, true);
       }
       
       // Allow any origin for now (can be restricted later)
       return callback(null, true);
-    }
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept']
   })
 );
 app.use(cookieParser());
