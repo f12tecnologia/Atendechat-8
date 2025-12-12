@@ -33,6 +33,7 @@ const corsOrigins = [
   process.env.BACKEND_URL,
   "https://mychat.dreamsparkshow.com.br",
   "https://mychat.intelfoz.app.br",
+  "http://mychat.intelfoz.app.br",
   "http://localhost:5000",
   "http://localhost:3000"
 ].filter(Boolean);
