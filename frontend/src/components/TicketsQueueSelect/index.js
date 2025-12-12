@@ -37,7 +37,7 @@ const TicketsQueueSelect = ({
 					}}
 					renderValue={() => i18n.t("ticketsQueueSelect.placeholder")}
 				>
-					{userQueues?.length > 0 &&
+					{userQueues && Array.isArray(userQueues) && userQueues.length > 0 &&
 						userQueues.map(queue => (
 							<MenuItem dense key={queue.id} value={queue.id}>
 								<Checkbox

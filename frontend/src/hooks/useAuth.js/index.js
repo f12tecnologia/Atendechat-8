@@ -154,51 +154,24 @@ const useAuth = () => {
     }
   }, [socketManager, user]);
 
-  const handleLogin = async (userData) => {
-    setLoading(true);
+  const handleLogin = async userData => {
+		setLoading(true);
 
-    try {
-      console.log("Attempting login with:", userData.email);
-      const { data } = await api.post("/auth/login", userData);
-      console.log("Login response:", data);
+		// Ensure queues is always an array
+		const userDataWithQueues = {
+			...userData,
+			queues: Array.isArray(userData.queues) ? userData.queues : []
+		};
 
-      const {
-        user: { companyId, id, company },
-      } = data;
-      const vencimento = company.dueDate;
-      var dias = moment(vencimento, "YYYY-MM-DD").diff(moment(), "days");
-      var isValid = dias >= 0; // true if subscription is still valid (not expired)
+		setUser(userDataWithQueues);
 
-      if (isValid) {
-        localStorage.setItem("token", JSON.stringify(data.token));
-        localStorage.setItem("refreshToken", JSON.stringify(data.refreshToken));
-        localStorage.setItem("companyId", companyId);
-        localStorage.setItem("userId", id);
-        localStorage.setItem("companyDueDate", vencimento);
-        api.defaults.headers.Authorization = `Bearer ${data.token}`;
-        setUser(data.user);
-        setIsAuth(true);
-        toast.success(i18n.t("auth.toasts.success"));
-        if (Math.round(dias) < 5) {
-          toast.warn(
-            `Sua assinatura vence em ${Math.round(dias)} ${
-              Math.round(dias) === 1 ? "dia" : "dias"
-            } `
-          );
-        }
-        history.push("/tickets");
-        setLoading(false);
-      } else {
-        toastError(`Opss! Sua assinatura venceu ${vencimento}.
-Entre em contato com o Suporte para mais informações! `);
-        setLoading(false);
-      }
-    } catch (err) {
-      console.error("Login error details:", err.response || err);
-      toastError(err);
-      setLoading(false);
-    }
-  };
+		localStorage.setItem("userId", JSON.stringify(userDataWithQueues.id));
+		localStorage.setItem("companyId", JSON.stringify(userDataWithQueues.companyId));
+
+		setLoading(false);
+		setIsAuth(true);
+		history.push("/tickets");
+	};
 
   const handleLogout = async () => {
     setLoading(true);

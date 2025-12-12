@@ -155,7 +155,7 @@ const TicketsManagerTabs = () => {
   const [openCount, setOpenCount] = useState(0);
   const [pendingCount, setPendingCount] = useState(0);
 
-  const userQueueIds = user.queues?.map((q) => q.id) || [];
+  const userQueueIds = (user.queues && Array.isArray(user.queues)) ? user.queues.map((q) => q.id) : [];
   const [selectedQueueIds, setSelectedQueueIds] = useState(userQueueIds);
   const [selectedTags, setSelectedTags] = useState([]);
   const [selectedUsers, setSelectedUsers] = useState([]);
