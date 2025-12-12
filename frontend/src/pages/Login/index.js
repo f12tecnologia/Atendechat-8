@@ -102,6 +102,12 @@ const Login = () => {
                 try {
                         const { data } = await api.post("/auth/login", user);
                         console.log("Login response:", data);
+
+                        // Ensure user has queues array
+                        if (!data.user.queues) {
+                                data.user.queues = [];
+                        }
+
                         localStorage.setItem("token", JSON.stringify(data.token));
                         localStorage.setItem("userId", data.user.id);
                         if (data.refreshToken) {

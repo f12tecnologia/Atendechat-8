@@ -155,8 +155,8 @@ const TicketsManagerTabs = () => {
   const [openCount, setOpenCount] = useState(0);
   const [pendingCount, setPendingCount] = useState(0);
 
-  const userQueueIds = user.queues.map((q) => q.id);
-  const [selectedQueueIds, setSelectedQueueIds] = useState(userQueueIds || []);
+  const userQueueIds = user.queues?.map((q) => q.id) || [];
+  const [selectedQueueIds, setSelectedQueueIds] = useState(userQueueIds);
   const [selectedTags, setSelectedTags] = useState([]);
   const [selectedUsers, setSelectedUsers] = useState([]);
 
@@ -307,7 +307,7 @@ const TicketsManagerTabs = () => {
         <TicketsQueueSelect
           style={{ marginLeft: 6 }}
           selectedQueueIds={selectedQueueIds}
-          userQueues={user?.queues}
+          userQueues={user?.queues || []}
           onChange={(values) => setSelectedQueueIds(values)}
         />
       </Paper>
