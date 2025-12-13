@@ -51,22 +51,15 @@ Atendechat is a comprehensive customer support platform integrated with WhatsApp
 
 ## Running the Application
 
-### Development
-Ambos os workflows estão configurados e rodando automaticamente:
-- ✅ **Frontend**: Rodando automaticamente na porta 5000
-- ✅ **Backend**: Rodando automaticamente na porta 8080
-- ✅ **Redis**: Rodando em background na porta 6379
+### Production Mode (Default)
+A aplicação roda com um único workflow "Production" que gerencia todos os serviços:
+- ✅ **Redis**: Inicia automaticamente na porta 6379
+- ✅ **Backend**: API Express rodando na porta 5000
+- ✅ **Frontend**: Servido estaticamente pelo backend na porta 5000
 
-Para reiniciar manualmente se necessário:
+Para reiniciar manualmente:
 ```bash
-# Reiniciar workflow do frontend
-# (Use a interface do Replit ou restart_workflow tool)
-
-# Reiniciar workflow do backend
-# (Use a interface do Replit ou restart_workflow tool)
-
-# Reiniciar Redis manualmente
-redis-server --daemonize yes --port 6379
+# Use a interface do Replit ou reinicie o workflow "Production"
 ```
 
 ### Database
@@ -101,6 +94,14 @@ The PostgreSQL database is managed by Replit and includes:
 - **Multi-channel Support** - Support for multiple messaging channels through unified interface
 
 ## Recent Changes
+**December 13, 2025** - Idioma Padrão Alterado para Português
+- ✅ **Idioma padrão**: Alterado de inglês (en) para português (pt)
+  - Arquivo modificado: `frontend/src/translate/i18n.js`
+  - Novos usuários verão a interface em português automaticamente
+  - Usuários podem mudar o idioma pelo ícone de globo no topo esquerdo
+- ✅ **Frontend reconstruído** com as mudanças de idioma
+- ✅ **Workflow unificado**: Apenas 1 workflow "Production" (roda Redis + Backend com frontend)
+
 **December 13, 2025** - Correção Crítica: Conexão com Banco de Dados em Produção
 - ✅ **CORREÇÃO CRÍTICA**: Configuração do banco de dados para suportar DATABASE_URL
   - Anteriormente: usava apenas variáveis individuais (DB_HOST, DB_NAME, etc.)
