@@ -57,7 +57,7 @@ mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd frontend && rm -rf node_modules && npm install && npm start"
+args = "cd frontend && npm start"
 
 [[workflows.workflow]]
 name = "frontend"
