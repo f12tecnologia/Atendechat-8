@@ -6,10 +6,7 @@ expertMode = true
 channel = "stable-25_05"
 packages = ["redis"]
 
-[[ports]]
-localPort = 3000
-externalPort = 3003
-
+# Portas para desenvolvimento e produção
 [[ports]]
 localPort = 5000
 externalPort = 80
@@ -22,11 +19,31 @@ externalPort = 3000
 localPort = 8080
 externalPort = 8080
 
+# Workflows
 [workflows]
-runButton = "Project"
+runButton = "Production"
 
+# Workflow de Produção (Build + Start)
 [[workflows.workflow]]
-name = "Project"
+name = "Production"
+mode = "sequential"
+author = "agent"
+
+[workflows.workflow.metadata]
+outputType = "webview"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "bash build.sh"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "bash start-production.sh"
+waitForPort = 5000
+
+# Workflow de Desenvolvimento (Parallel Backend + Frontend)
+[[workflows.workflow]]
+name = "Development"
 mode = "parallel"
 author = "agent"
 
@@ -38,6 +55,7 @@ args = "backend"
 task = "workflow.run"
 args = "frontend"
 
+# Backend workflow
 [[workflows.workflow]]
 name = "backend"
 author = "agent"
@@ -50,27 +68,20 @@ task = "shell.exec"
 args = "./start-server.sh"
 waitForPort = 8080
 
-[[workflows.workflow]]
-name = "Start Frontend"
-author = 45814161
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "cd frontend && npm start"
-
+# Frontend workflow
 [[workflows.workflow]]
 name = "frontend"
 author = "agent"
+
+[workflows.workflow.metadata]
+outputType = "webview"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "cd frontend && npm start"
 waitForPort = 5000
 
-[workflows.workflow.metadata]
-outputType = "webview"
-
+# Configuração de Deployment
 [deployment]
 deploymentTarget = "vm"
 run = ["bash", "start-production.sh"]
