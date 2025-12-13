@@ -103,12 +103,16 @@ const SignUp = () => {
         };
 
         const [plans, setPlans] = useState([]);
-        const { getPlanList } = usePlans();
+        const { getPublicPlanList } = usePlans();
 
         useEffect(() => {
                 async function fetchData() {
-                        const list = await getPlanList();
-                        setPlans(list);
+                        try {
+                                const list = await getPublicPlanList();
+                                setPlans(list);
+                        } catch (error) {
+                                console.error("Error fetching plans:", error);
+                        }
                 }
                 fetchData();
         }, []);

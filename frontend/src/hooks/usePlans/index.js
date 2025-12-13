@@ -11,6 +11,15 @@ const usePlans = () => {
         return data;
     }
 
+    const getPublicPlanList = async (params) => {
+        const { data } = await api.request({
+            url: '/plans/public',
+            method: 'GET',
+            params
+        });
+        return data;
+    }
+
     const list = async (params) => {
         const { data } = await api.request({
             url: '/plans/all',
@@ -65,6 +74,7 @@ const usePlans = () => {
 
     return {
         getPlanList,
+        getPublicPlanList,
         list,
         save,
         update,
