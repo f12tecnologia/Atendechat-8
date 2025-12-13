@@ -21,8 +21,14 @@ const api = axios.create({
 
 api.interceptors.request.use(
         config => {
-                const token = localStorage.getItem("token");
+                let token = localStorage.getItem("token");
                 if (token) {
+                        // Remove JSON parsing if token is already a string
+                        try {
+                                token = JSON.parse(token);
+                        } catch (e) {
+                                // Token is already a plain string
+                        }
                         config.headers.Authorization = `Bearer ${token}`;
                 }
                 return config;
@@ -82,8 +88,15 @@ api.interceptors.response.use(
                         }
 
                         try {
+                                let parsedRefreshToken = refreshToken;
+                                try {
+                                        parsedRefreshToken = JSON.parse(refreshToken);
+                                } catch (e) {
+                                        // Already a plain string
+                                }
+
                                 const { data } = await openApi.post("/auth/refresh_token", {
-                                        refreshToken
+                                        refreshToken: parsedRefreshToken
                                 });
 
                                 if (data.token) {

@@ -45,14 +45,19 @@ const useAuth = () => {
         isRefreshing = true;
 
         try {
-          const storedRefreshToken = localStorage.getItem("refreshToken");
-          const refreshTokenValue = storedRefreshToken ? JSON.parse(storedRefreshToken) : null;
-          const { data } = await api.post("/auth/refresh_token", { refreshToken: refreshTokenValue });
+          let storedRefreshToken = localStorage.getItem("refreshToken");
+          try {
+            storedRefreshToken = JSON.parse(storedRefreshToken);
+          } catch (e) {
+            // Already a plain string
+          }
+
+          const { data } = await api.post("/auth/refresh_token", { refreshToken: storedRefreshToken });
 
           if (data) {
-            localStorage.setItem("token", JSON.stringify(data.token));
+            localStorage.setItem("token", data.token);
             if (data.refreshToken) {
-              localStorage.setItem("refreshToken", JSON.stringify(data.refreshToken));
+              localStorage.setItem("refreshToken", data.refreshToken);
             }
             api.defaults.headers.Authorization = `Bearer ${data.token}`;
 
@@ -106,11 +111,18 @@ const useAuth = () => {
     (async () => {
       if (token && refreshToken) {
         try {
-          const { data } = await api.post("/auth/refresh_token", { refreshToken: JSON.parse(refreshToken) });
+          let parsedRefreshToken = refreshToken;
+          try {
+            parsedRefreshToken = JSON.parse(refreshToken);
+          } catch (e) {
+            // Already a plain string
+          }
+
+          const { data } = await api.post("/auth/refresh_token", { refreshToken: parsedRefreshToken });
           api.defaults.headers.Authorization = `Bearer ${data.token}`;
-          localStorage.setItem("token", JSON.stringify(data.token));
+          localStorage.setItem("token", data.token);
           if (data.refreshToken) {
-            localStorage.setItem("refreshToken", JSON.stringify(data.refreshToken));
+            localStorage.setItem("refreshToken", data.refreshToken);
           }
           setIsAuth(true);
           setUser(data.user);

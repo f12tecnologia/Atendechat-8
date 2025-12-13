@@ -114,8 +114,14 @@ const SocketManager = {
         try {
           token = JSON.parse(token);
         } catch (e) {
+          // Token is already a plain string
         }
       }
+      
+      if (!token) {
+        return new DummySocket();
+      }
+
       const { exp } = decodeJwt(token) ?? {};
 
       if ( Date.now() >= exp*1000) {
