@@ -74,27 +74,16 @@ if (fs.existsSync(frontendBuildPath)) {
   
   // Middleware to serve index.html for browser navigation BEFORE API routes
   app.use((req: Request, res: Response, next: NextFunction) => {
-    // Skip API endpoints - these are handled by routes
-    // Known API endpoints that need to pass through
-    const apiPaths = [
-      '/auth', '/users', '/tickets', '/contacts', '/messages', '/settings',
-      '/whatsapp', '/queues', '/quickAnswers', '/tags', '/schedules',
-      '/companies', '/plans', '/helps', '/files', '/announcements',
-      '/campaigns', '/contactLists', '/dashboard', '/subscriptions',
-      '/invoices', '/flows', '/flowbuilder', '/versions', '/prompts',
-      '/queueIntegrations', '/api-integrations', '/webhook', '/socket.io'
-    ];
-    
-    // Check if path starts with any known API path
-    const isApiRequest = apiPaths.some(apiPath => req.path.startsWith(apiPath));
-    
-    if (isApiRequest) {
-      return next();
-    }
-    
-    // For non-API routes, check if it's a browser navigation request
+    // For browser navigation requests (Accept: text/html), serve the React app
     const acceptHeader = req.headers.accept || "";
-    if (acceptHeader.includes("text/html") && req.method === "GET") {
+    const isBrowserRequest = acceptHeader.includes("text/html") && req.method === "GET";
+    
+    // Paths that should always go to API even if browser requests
+    const alwaysApiPaths = ['/auth/login', '/auth/logout', '/auth/signup'];
+    const isAlwaysApi = alwaysApiPaths.some(p => req.path.startsWith(p));
+    
+    if (isBrowserRequest && !isAlwaysApi) {
+      // Browser navigation - serve React app for client-side routing
       return res.sendFile(path.join(frontendBuildPath, "index.html"));
     }
     
