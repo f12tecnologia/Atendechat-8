@@ -34,12 +34,12 @@ class ManagedSocket {
           this.rawSocket.off(j.event, j.callback);
           this.rawSocket.on(j.event, j.callback);
         }
-        
+
         this.rawSocket.on("ready", refreshJoinsOnReady);
       }
     });
   }
-  
+
   on(event, callback) {
     if (event === "ready" || event === "connect") {
       return this.socketManager.onReady(callback);
@@ -47,13 +47,13 @@ class ManagedSocket {
     this.callbacks.push({event, callback});
     return this.rawSocket.on(event, callback);
   }
-  
+
   off(event, callback) {
     const i = this.callbacks.findIndex((c) => c.event === event && c.callback === callback);
     this.callbacks.splice(i, 1);
     return this.rawSocket.off(event, callback);
   }
-  
+
   emit(event, ...params) {
     if (event.startsWith("join")) {
       this.joins.push({ event: event.substring(4), params });
@@ -61,7 +61,7 @@ class ManagedSocket {
     }
     return this.rawSocket.emit(event, ...params);
   }
-  
+
   disconnect() {
     for (const j of this.joins) {
       this.rawSocket.emit(`leave${j.event}`, ...j.params);
@@ -122,23 +122,27 @@ const SocketManager = {
 
       this.currentCompanyId = companyId;
       this.currentUserId = userId;
-      
+
       if (!token) {
         return new DummySocket();
       }
-      
+
       this.currentSocket = openSocket(process.env.REACT_APP_BACKEND_URL, {
         transports: ["polling"],
         pingTimeout: 18000,
         pingInterval: 18000,
         query: { token },
+        reconnection: true,
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
       });
-      
+
       this.currentSocket.on("disconnect", (reason) => {
         console.warn(`socket disconnected because: ${reason}`);
         if (reason.startsWith("io ")) {
           console.warn("tryng to reconnect", this.currentSocket);
-          
+
           const { exp } = decodeJwt(token) ?? {};
           if ( Date.now()-180 >= exp*1000) {
             console.warn("Expired token, reloading app");
@@ -149,30 +153,30 @@ const SocketManager = {
           this.currentSocket.connect();
         }        
       });
-      
+
       this.currentSocket.on("connect", (...params) => {
         console.warn("socket connected", params);
       })
-      
+
       this.currentSocket.onAny((event, ...args) => {
         console.debug("Event: ", { socket: this.currentSocket, event, args });
       });
-      
+
       this.onReady(() => {
         this.socketReady = true;
       });
 
     }
-    
+
     return new ManagedSocket(this);
   },
-  
+
   onReady: function( callbackReady ) {
     if (this.socketReady) {
       callbackReady();
       return
     }
-    
+
     this.currentSocket.once("ready", () => {
       callbackReady();
     });

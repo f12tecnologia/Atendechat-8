@@ -8,6 +8,7 @@ import { createTheme, ThemeProvider } from "@material-ui/core/styles";
 import { useMediaQuery } from "@material-ui/core";
 import ColorModeContext from "./layout/themeContext";
 import { SocketContext, SocketManager } from './context/Socket/SocketContext';
+import { useEffect } from "react";
 
 import Routes from "./routes";
 
@@ -187,7 +188,17 @@ const App = () => {
         window.localStorage.setItem("preferredTheme", mode);
     }, [mode]);
 
+    useEffect(() => {
+        // Connect socket only once when app mounts
+        if (!SocketManager.connected) {
+            SocketManager.connect();
+        }
 
+        return () => {
+            // Don't disconnect on unmount, keep connection alive
+            // SocketManager.disconnect();
+        };
+    }, []);
 
     return (
         <ColorModeContext.Provider value={{ colorMode }}>
