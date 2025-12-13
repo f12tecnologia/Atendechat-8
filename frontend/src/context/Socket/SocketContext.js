@@ -110,6 +110,12 @@ const SocketManager = {
       }
 
       let token = localStorage.getItem("token");
+      if (token) {
+        try {
+          token = JSON.parse(token);
+        } catch (e) {
+        }
+      }
       const { exp } = decodeJwt(token) ?? {};
 
       if ( Date.now() >= exp*1000) {
