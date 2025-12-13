@@ -87,23 +87,6 @@ const Login = () => {
         const [user, setUser] = useState({ email: "", password: "" });
         const [showAdditionalSignup, setShowAdditionalSignup] = useState(false);
 
-        // Clear any stale tokens on login page
-        useEffect(() => {
-                const currentPath = window.location.pathname;
-                if (currentPath === '/login') {
-                        localStorage.removeItem("token");
-                        localStorage.removeItem("refreshToken");
-                        localStorage.removeItem("userId");
-                        localStorage.removeItem("companyId");
-                        // Limpar também cookies se necessário
-                        document.cookie.split(";").forEach((c) => {
-                                document.cookie = c
-                                        .replace(/^ +/, "")
-                                        .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
-                        });
-                }
-        }, []);
-
         let companyId = null;
 
         // Languages
@@ -118,25 +101,7 @@ const Login = () => {
 
         const handlSubmit = async e => {
                 e.preventDefault();
-                try {
-                        const { data } = await api.post("/auth/login", user);
-                        console.log("Login response:", data);
-
-                        // Ensure user has queues array
-                        if (!data.user.queues) {
-                                data.user.queues = [];
-                        }
-
-                        localStorage.setItem("token", data.token);
-                        localStorage.setItem("userId", data.user.id);
-                        if (data.refreshToken) {
-                                localStorage.setItem("refreshToken", data.refreshToken);
-                        }
-                        api.defaults.headers.Authorization = `Bearer ${data.token}`;
-                        handleLogin(data.user);
-                } catch (err) {
-                        console.error("Login error:", err);
-                }
+                await handleLogin(user);
         };
 
         const handlemenuLanguage = ( event ) => {
