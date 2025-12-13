@@ -60,7 +60,9 @@ export const index = async (req: Request, res: Response): Promise<Response> => {
 };
 
 export const list = async (req: Request, res: Response): Promise<Response> => {
+  console.log("[Plans] GET /plans/list called");
   const plans: Plan[] = await FindAllPlanService();
+  console.log("[Plans] Found", plans.length, "plans");
 
   return res.status(200).json(plans);
 };

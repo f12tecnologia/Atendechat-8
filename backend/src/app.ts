@@ -69,8 +69,18 @@ app.use("/public", express.static(uploadConfig.directory));
 // Serve frontend static files BEFORE API routes
 const frontendBuildPath = path.join(__dirname, "..", "..", "frontend", "build");
 if (fs.existsSync(frontendBuildPath)) {
-  // Serve static assets (js, css, images, etc)
-  app.use(express.static(frontendBuildPath));
+  // Serve static assets (js, css, images, etc) with cache for versioned files
+  app.use(express.static(frontendBuildPath, {
+    maxAge: '1y',
+    setHeaders: (res, filePath) => {
+      // index.html should never be cached
+      if (filePath.endsWith('index.html')) {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+      }
+    }
+  }));
   
   // Middleware to serve index.html for browser navigation BEFORE API routes
   app.use((req: Request, res: Response, next: NextFunction) => {
@@ -83,7 +93,10 @@ if (fs.existsSync(frontendBuildPath)) {
     const isAlwaysApi = alwaysApiPaths.some(p => req.path.startsWith(p));
     
     if (isBrowserRequest && !isAlwaysApi) {
-      // Browser navigation - serve React app for client-side routing
+      // Browser navigation - serve React app for client-side routing with no-cache
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
       return res.sendFile(path.join(frontendBuildPath, "index.html"));
     }
     
