@@ -101,6 +101,15 @@ The PostgreSQL database is managed by Replit and includes:
 - **Multi-channel Support** - Support for multiple messaging channels through unified interface
 
 ## Recent Changes
+**December 13, 2025** - Correção Crítica: Conexão com Banco de Dados em Produção
+- ✅ **CORREÇÃO CRÍTICA**: Configuração do banco de dados para suportar DATABASE_URL
+  - Anteriormente: usava apenas variáveis individuais (DB_HOST, DB_NAME, etc.)
+  - Agora: detecta automaticamente DATABASE_URL (usado em produção)
+  - SSL: habilitado apenas para bancos externos (Neon, AWS, Supabase)
+  - Banco local Replit: funciona sem SSL
+- ✅ **Erro 500 corrigido**: Aplicação agora funciona corretamente em produção
+- 📝 **Arquivo modificado**: backend/src/config/database.ts
+
 **November 14, 2025** - Melhorias UX Evolution API (Fotos de Perfil + Filas Automáticas)
 - ✅ **MELHORIA 1**: Fotos de perfil automáticas
   - Adicionado `getProfilePicture()` em EvolutionApiService
