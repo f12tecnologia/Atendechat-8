@@ -84,19 +84,19 @@ const useStyles = makeStyles(theme => ({
 
 const Login = () => {
         const classes = useStyles();
-        const [user] = useState({ email: "", password: "" });
-	const [showAdditionalSignup, setShowAdditionalSignup] = useState(false);
+        const [user, setUser] = useState({ email: "", password: "" });
+        const [showAdditionalSignup, setShowAdditionalSignup] = useState(false);
 
-	// Clear any stale tokens on login page
-	useEffect(() => {
-		const currentPath = window.location.pathname;
-		if (currentPath === '/login') {
-			localStorage.removeItem("token");
-			localStorage.removeItem("refreshToken");
-		}
-	}, []);
+        // Clear any stale tokens on login page
+        useEffect(() => {
+                const currentPath = window.location.pathname;
+                if (currentPath === '/login') {
+                        localStorage.removeItem("token");
+                        localStorage.removeItem("refreshToken");
+                }
+        }, []);
 
-	let companyId = null;
+        let companyId = null;
 
         // Languages
         const [anchorElLanguage, setAnchorElLanguage] = useState(null);

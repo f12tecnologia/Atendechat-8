@@ -89,8 +89,13 @@ const SocketManager = {
 
   getSocket: function(companyId) {
     let userId = null;
-    if (localStorage.getItem("userId")) {
-      userId = localStorage.getItem("userId");
+    const storedUserId = localStorage.getItem("userId");
+    if (storedUserId) {
+      try {
+        userId = JSON.parse(storedUserId);
+      } catch (e) {
+        userId = storedUserId;
+      }
     }
 
     if (!companyId && !this.currentSocket) {
@@ -99,6 +104,10 @@ const SocketManager = {
 
     if (companyId && typeof companyId !== "string") {
       companyId = `${companyId}`;
+    }
+    
+    if (userId && typeof userId !== "string") {
+      userId = `${userId}`;
     }
 
     if (companyId !== this.currentCompanyId || userId !== this.currentUserId) {
