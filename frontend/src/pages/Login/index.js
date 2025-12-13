@@ -119,7 +119,7 @@ const Login = () => {
                                 data.user.queues = [];
                         }
 
-                        localStorage.setItem("token", JSON.stringify(data.token));
+                        localStorage.setItem("token", data.token);
                         localStorage.setItem("userId", data.user.id);
                         if (data.refreshToken) {
                                 localStorage.setItem("refreshToken", data.refreshToken);
