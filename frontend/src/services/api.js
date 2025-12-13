@@ -72,10 +72,12 @@ api.interceptors.response.use(
 
                         if (!refreshToken) {
                                 console.log("No refresh token available, redirecting to login");
-                                localStorage.clear();
                                 isRefreshing = false;
                                 processQueue(new Error("Session expired"), null);
-                                window.location.href = "/login";
+                                localStorage.clear();
+                                setTimeout(() => {
+                                        window.location.href = "/login";
+                                }, 100);
                                 return Promise.reject(error);
                         }
 
