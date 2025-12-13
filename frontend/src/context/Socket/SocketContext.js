@@ -109,7 +109,7 @@ const SocketManager = {
         this.currentSocket = null;
       }
 
-      let token = JSON.parse(localStorage.getItem("token"));
+      let token = localStorage.getItem("token");
       const { exp } = decodeJwt(token) ?? {};
 
       if ( Date.now() >= exp*1000) {
