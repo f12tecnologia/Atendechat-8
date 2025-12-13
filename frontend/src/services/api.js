@@ -126,11 +126,14 @@ api.interceptors.response.use(
 );
 
 export const openApi = axios.create({
-  baseURL: getBaseUrl(),
-  headers: {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json'
-  }
+	baseURL: process.env.REACT_APP_BACKEND_URL,
+	withCredentials: false,
+});
+
+// Interceptor para remover qualquer header de autorização do openApi
+openApi.interceptors.request.use((config) => {
+	delete config.headers.Authorization;
+	return config;
 });
 
 

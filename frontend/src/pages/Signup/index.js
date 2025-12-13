@@ -113,9 +113,17 @@ const SignUp = () => {
                                 console.log("[Signup] Plans received:", JSON.stringify(list));
                                 console.log("[Signup] Plans is array:", Array.isArray(list));
                                 console.log("[Signup] Plans length:", list?.length);
-                                setPlans(list || []);
+                                
+                                if (Array.isArray(list)) {
+                                        setPlans(list);
+                                } else {
+                                        console.error("[Signup] Response is not an array:", list);
+                                        setPlans([]);
+                                }
                         } catch (error) {
                                 console.error("[Signup] Error fetching plans:", error);
+                                console.error("[Signup] Error details:", error.response?.data);
+                                setPlans([]);
                         }
                 }
                 fetchData();

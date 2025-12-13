@@ -3,12 +3,18 @@ import api, { openApi } from "../../services/api";
 const usePlans = () => {
 
     const getPlanList = async (params) => {
-        const { data } = await openApi.request({
-            url: '/plans/list',
-            method: 'GET',
-            params
-        });
-        return data;
+        try {
+            const { data } = await openApi.request({
+                url: '/plans/list',
+                method: 'GET',
+                params
+            });
+            console.log("[usePlans] Plans fetched successfully:", data);
+            return data;
+        } catch (error) {
+            console.error("[usePlans] Error fetching plans:", error);
+            throw error;
+        }
     }
 
     const list = async (params) => {

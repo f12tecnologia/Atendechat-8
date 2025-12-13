@@ -93,6 +93,14 @@ const Login = () => {
                 if (currentPath === '/login') {
                         localStorage.removeItem("token");
                         localStorage.removeItem("refreshToken");
+                        localStorage.removeItem("userId");
+                        localStorage.removeItem("companyId");
+                        // Limpar também cookies se necessário
+                        document.cookie.split(";").forEach((c) => {
+                                document.cookie = c
+                                        .replace(/^ +/, "")
+                                        .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+                        });
                 }
         }, []);
 
