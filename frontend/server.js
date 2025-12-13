@@ -1,10 +1,16 @@
-//simple express server to run frontend production build;
 const express = require("express");
 const path = require("path");
 const app = express();
-app.use(express.static(path.join(__dirname, "build")));
-app.get("/*", function (req, res) {
-	res.sendFile(path.join(__dirname, "build", "index.html"));
-});
-app.listen(3000);
 
+// Serve static files from the build directory
+app.use(express.static(path.join(__dirname, "build")));
+
+// Handle React routing, return all requests to React app
+app.get("/*", function (req, res) {
+  res.sendFile(path.join(__dirname, "build", "index.html"));
+});
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Frontend server running on port ${PORT}`);
+});
