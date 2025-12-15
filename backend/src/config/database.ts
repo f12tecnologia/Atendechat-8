@@ -3,9 +3,13 @@ import "../bootstrap";
 // Parse DATABASE_URL if available (for production)
 let dbConfig: any = {};
 
-if (process.env.DATABASE_URL) {
+// Use EXTERNAL_DATABASE_URL first (not overwritten by Replit Deploy)
+// Fall back to DATABASE_URL if EXTERNAL_DATABASE_URL is not set
+const databaseUrl = process.env.EXTERNAL_DATABASE_URL || process.env.DATABASE_URL;
+
+if (databaseUrl) {
   // Parse the DATABASE_URL
-  const url = new URL(process.env.DATABASE_URL);
+  const url = new URL(databaseUrl);
   
   // Detect if SSL is needed (external DBs like Neon need SSL, local Replit DB doesn't)
   const needsSsl = url.hostname.includes('neon.tech') || 
