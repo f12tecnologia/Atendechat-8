@@ -1,4 +1,4 @@
-import api from "../../services/api";
+import api, { openApi } from "../../services/api";
 
 const usePlans = () => {
 
@@ -12,10 +12,13 @@ const usePlans = () => {
     }
 
     const getPublicPlanList = async (params) => {
-        const { data } = await api.request({
+        const { data } = await openApi.request({
             url: '/plans/public',
             method: 'GET',
-            params
+            params,
+            headers: {
+                'Accept': 'application/json'
+            }
         });
         return data;
     }
