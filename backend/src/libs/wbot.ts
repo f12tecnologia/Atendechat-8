@@ -153,7 +153,24 @@ export const initWASocket = async (whatsapp: Whatsapp): Promise<Session> => {
             );
 
             if (connection === "close") {
-              if ((lastDisconnect?.error as Boom)?.output?.statusCode === 403) {
+              const statusCode = (lastDisconnect?.error as Boom)?.output?.statusCode;
+              const errorMessage = (lastDisconnect?.error as any)?.message || "";
+              const isConflict = statusCode === DisconnectReason.connectionReplaced || 
+                                 errorMessage.includes("conflict") ||
+                                 errorMessage.includes("replaced");
+              
+              if (isConflict) {
+                logger.warn(`Session ${name} closed due to conflict (another device connected). NOT reconnecting automatically.`);
+                await whatsapp.update({ status: "DISCONNECTED", qrcode: "" });
+                io.to(`company-${whatsapp.companyId}-mainchannel`).emit(`company-${whatsapp.companyId}-whatsappSession`, {
+                  action: "update",
+                  session: whatsapp
+                });
+                removeWbot(id, false);
+                return;
+              }
+              
+              if (statusCode === 403) {
                 await whatsapp.update({ status: "PENDING", session: "" });
                 await DeleteBaileysService(whatsapp.id);
                 io.to(`company-${whatsapp.companyId}-mainchannel`).emit(`company-${whatsapp.companyId}-whatsappSession`, {
@@ -161,11 +178,10 @@ export const initWASocket = async (whatsapp: Whatsapp): Promise<Session> => {
                   session: whatsapp
                 });
                 removeWbot(id, false);
+                return;
               }
-              if (
-                (lastDisconnect?.error as Boom)?.output?.statusCode !==
-                DisconnectReason.loggedOut
-              ) {
+              
+              if (statusCode !== DisconnectReason.loggedOut) {
                 removeWbot(id, false);
                 setTimeout(
                   () => StartWhatsAppSession(whatsapp, whatsapp.companyId),
@@ -179,10 +195,6 @@ export const initWASocket = async (whatsapp: Whatsapp): Promise<Session> => {
                   session: whatsapp
                 });
                 removeWbot(id, false);
-                setTimeout(
-                  () => StartWhatsAppSession(whatsapp, whatsapp.companyId),
-                  2000
-                );
               }
             }
 
