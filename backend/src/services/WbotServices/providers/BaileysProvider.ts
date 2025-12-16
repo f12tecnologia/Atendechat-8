@@ -9,8 +9,48 @@ import GetTicketWbot from "../../../helpers/GetTicketWbot";
 import formatBody from "../../../helpers/Mustache";
 import AppError from "../../../errors/AppError";
 import { WhatsAppProvider, SendTextOptions, SendMediaOptions } from "./WhatsAppProvider";
+import { logger } from "../../../utils/logger";
 
 const publicFolder = path.resolve(__dirname, "..", "..", "..", "..", "public");
+
+const getRemoteJidFromTicket = async (ticket: any): Promise<string | null> => {
+  try {
+    const lastMessage = await Message.findOne({
+      where: {
+        ticketId: ticket.id,
+        fromMe: false
+      },
+      order: [["createdAt", "DESC"]]
+    });
+    
+    if (lastMessage?.remoteJid) {
+      logger.info(`Using original remoteJid: ${lastMessage.remoteJid}`);
+      return lastMessage.remoteJid;
+    }
+  } catch (err) {
+    logger.warn("Could not get remoteJid from message:", err);
+  }
+  return null;
+};
+
+const formatWhatsAppNumber = (number: string, isGroup: boolean): string => {
+  if (isGroup) {
+    return `${number}@g.us`;
+  }
+  
+  let cleanNumber = number.replace(/\D/g, "");
+  
+  if (cleanNumber.startsWith("55") && cleanNumber.length === 12) {
+    const ddd = cleanNumber.substring(2, 4);
+    const dddNumber = parseInt(ddd, 10);
+    if (dddNumber >= 11 && dddNumber <= 28) {
+      cleanNumber = cleanNumber.substring(0, 4) + "9" + cleanNumber.substring(4);
+      logger.info(`Added 9 digit for Brazilian number: ${cleanNumber}`);
+    }
+  }
+  
+  return `${cleanNumber}@s.whatsapp.net`;
+};
 
 const processAudio = async (audio: string): Promise<string> => {
   const outputAudio = `${publicFolder}/${new Date().getTime()}.mp3`;
@@ -48,9 +88,11 @@ class BaileysProvider implements WhatsAppProvider {
   async sendText({ body, ticket, quotedMsg }: SendTextOptions): Promise<WAMessage> {
     let options = {};
     const wbot = await GetTicketWbot(ticket);
-    const number = `${ticket.contact.number}@${
-      ticket.isGroup ? "g.us" : "s.whatsapp.net"
-    }`;
+    
+    const originalJid = await getRemoteJidFromTicket(ticket);
+    const number = originalJid || formatWhatsAppNumber(ticket.contact.number, ticket.isGroup);
+    
+    logger.info(`Sending message to: ${number} (contact.number: ${ticket.contact.number})`);
 
     if (quotedMsg) {
       const chatMessages = await Message.findOne({
@@ -96,6 +138,11 @@ class BaileysProvider implements WhatsAppProvider {
   async sendMedia({ media, ticket, body }: SendMediaOptions): Promise<WAMessage> {
     try {
       const wbot = await GetTicketWbot(ticket);
+      
+      const originalJid = await getRemoteJidFromTicket(ticket);
+      const number = originalJid || formatWhatsAppNumber(ticket.contact.number, ticket.isGroup);
+      
+      logger.info(`Sending media to: ${number} (contact.number: ${ticket.contact.number})`);
 
       const pathMedia = media.path;
       const typeMessage = media.mimetype.split("/")[0];
@@ -146,7 +193,7 @@ class BaileysProvider implements WhatsAppProvider {
       }
 
       const sentMessage = await wbot.sendMessage(
-        `${ticket.contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
+        number,
         {
           ...options
         }
