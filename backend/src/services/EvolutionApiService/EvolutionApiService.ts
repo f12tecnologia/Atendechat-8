@@ -35,12 +35,21 @@ class EvolutionApiService {
 
   constructor(config: EvolutionApiConfig) {
     this.apiKey = config.apiKey;
+    
+    // Auto-fix URL if missing protocol
+    let baseUrl = config.baseUrl.trim();
+    if (!baseUrl.startsWith("http://") && !baseUrl.startsWith("https://")) {
+      baseUrl = `https://${baseUrl}`;
+      logger.info(`Evolution API - Auto-fixed URL to: ${baseUrl}`);
+    }
+    
     this.client = axios.create({
-      baseURL: config.baseUrl,
+      baseURL: baseUrl,
       headers: {
         "Content-Type": "application/json",
         apikey: config.apiKey
-      }
+      },
+      timeout: 30000
     });
   }
 
