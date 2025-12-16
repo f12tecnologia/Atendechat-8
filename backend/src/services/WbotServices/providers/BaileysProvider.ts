@@ -13,8 +13,37 @@ import { logger } from "../../../utils/logger";
 
 const publicFolder = path.resolve(__dirname, "..", "..", "..", "..", "public");
 
+const extractNumberFromJid = (jid: string): string => {
+  return jid.replace(/@.*$/, "").replace(/\D/g, "");
+};
+
+const numbersMatch = (jidNumber: string, contactNumber: string): boolean => {
+  const cleanJid = jidNumber.replace(/\D/g, "");
+  const cleanContact = contactNumber.replace(/\D/g, "");
+  
+  if (cleanJid === cleanContact) return true;
+  
+  if (cleanJid.startsWith("55") && cleanContact.startsWith("55")) {
+    const jidWithout9 = cleanJid.length === 13 ? cleanJid.slice(0, 4) + cleanJid.slice(5) : cleanJid;
+    const contactWithout9 = cleanContact.length === 13 ? cleanContact.slice(0, 4) + cleanContact.slice(5) : cleanContact;
+    const jidWith9 = cleanJid.length === 12 ? cleanJid.slice(0, 4) + "9" + cleanJid.slice(4) : cleanJid;
+    const contactWith9 = cleanContact.length === 12 ? cleanContact.slice(0, 4) + "9" + cleanContact.slice(4) : cleanContact;
+    
+    return jidWithout9 === contactWithout9 || jidWith9 === contactWith9 || 
+           jidWithout9 === cleanContact || cleanJid === contactWith9;
+  }
+  
+  return false;
+};
+
 const getRemoteJidFromTicket = async (ticket: any): Promise<string | null> => {
   try {
+    const contactNumber = ticket.contact?.number;
+    if (!contactNumber) {
+      logger.warn(`No contact number found for ticket ${ticket.id}`);
+      return null;
+    }
+
     const lastMessage = await Message.findOne({
       where: {
         ticketId: ticket.id,
@@ -24,8 +53,14 @@ const getRemoteJidFromTicket = async (ticket: any): Promise<string | null> => {
     });
     
     if (lastMessage?.remoteJid) {
-      logger.info(`Using original remoteJid: ${lastMessage.remoteJid}`);
-      return lastMessage.remoteJid;
+      const jidNumber = extractNumberFromJid(lastMessage.remoteJid);
+      
+      if (numbersMatch(jidNumber, contactNumber)) {
+        logger.info(`Using validated remoteJid: ${lastMessage.remoteJid} for contact: ${contactNumber}`);
+        return lastMessage.remoteJid;
+      } else {
+        logger.warn(`RemoteJid mismatch! JID: ${lastMessage.remoteJid} (${jidNumber}) vs Contact: ${contactNumber}. Will use contact number instead.`);
+      }
     }
   } catch (err) {
     logger.warn("Could not get remoteJid from message:", err);
