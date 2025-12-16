@@ -88,12 +88,23 @@ class EvolutionApiService {
         };
       }
 
+      logger.info(`Evolution API - Creating instance: ${data.instanceName}`, { payload });
       const response = await this.client.post("/instance/create", payload);
       logger.info(`Evolution API - Instance created: ${data.instanceName}`);
       return response.data;
-    } catch (error) {
-      logger.error("Evolution API - Error creating instance:", error);
-      throw new AppError("ERR_EVOLUTION_API_CREATE_INSTANCE");
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.message || error.response?.data?.response?.message || error.message || "Unknown error";
+      const statusCode = error.response?.status || 0;
+      logger.error(`Evolution API - Error creating instance (${statusCode}): ${errorMsg}`, {
+        instanceName: data.instanceName,
+        error: error.response?.data || error.message,
+        stack: error.stack
+      });
+      
+      if (statusCode === 401) {
+        throw new AppError("ERR_EVOLUTION_API_UNAUTHORIZED", 401);
+      }
+      throw new AppError(`ERR_EVOLUTION_API_CREATE_INSTANCE: ${errorMsg}`, statusCode || 400);
     }
   }
 
