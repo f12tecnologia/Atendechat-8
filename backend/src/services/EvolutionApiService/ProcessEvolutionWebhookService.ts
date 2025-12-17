@@ -78,38 +78,17 @@ const ProcessEvolutionWebhookService = async (
     });
 
     if (!apiIntegration) {
-      logger.warn(`[WEBHOOK] Integration not found for instance: ${instance}`);
-      logger.info(`[WEBHOOK] Auto-creating integration for instance: ${instance}`);
-      
-      // Auto-criar integração para esta instância
-      try {
-        // Extrair URL base e API key do webhook (se disponível via headers ou payload)
-        const baseUrl = webhookData.server_url || "https://evolution.intelfoz.app.br";
-        const apiKey = webhookData.apikey || "c680d58f04ed48c97cb13bd3b5b7a05b"; // fallback para key conhecida
-        
-        apiIntegration = await ApiIntegration.create({
-          name: `Evolution - ${instance}`,
+      // Tentar buscar por instanceName parcial (nome pode ter sido normalizado)
+      apiIntegration = await ApiIntegration.findOne({
+        where: {
+          companyId,
           type: "evolution",
-          baseUrl,
-          apiKey,
-          instanceName: instance,
-          isActive: true,
-          webhookUrl: "",
-          companyId
-        });
-        
-        logger.info(`[WEBHOOK] ✅ Auto-created integration: id=${apiIntegration.id}, name=${apiIntegration.name}`);
-        
-        // Emitir evento Socket.IO para atualizar frontend
-        const io = getIO();
-        io.to(`company-${companyId}-notification`)
-          .to(`company-${companyId}-mainchannel`)
-          .emit(`company-${companyId}-apiIntegration`, {
-            action: "create",
-            apiIntegration
-          });
-      } catch (error) {
-        logger.error(`[WEBHOOK] Failed to auto-create integration: ${error}`);
+          isActive: true
+        }
+      });
+      
+      if (!apiIntegration) {
+        logger.warn(`[WEBHOOK] No Evolution integration found for company ${companyId}. Skipping.`);
         return;
       }
     }
@@ -124,7 +103,7 @@ const ProcessEvolutionWebhookService = async (
       
       logger.info(`Evolution connection update: instance=${instance}, state=${state}, rawState=${rawState}`);
 
-      // Buscar conexão WhatsApp por apiIntegrationId (prioritário) ou nome (fallback)
+      // Buscar conexão WhatsApp por apiIntegrationId (prioritário)
       let whatsapp = await Whatsapp.findOne({
         where: {
           apiIntegrationId: apiIntegration.id,
@@ -133,31 +112,30 @@ const ProcessEvolutionWebhookService = async (
       });
 
       if (!whatsapp) {
-        // Fallback: buscar por nome (para migração de dados antigos)
+        // Fallback: buscar por session (instanceName) ou nome
+        const { Op } = require("sequelize");
         whatsapp = await Whatsapp.findOne({
           where: {
-            name: `Evolution - ${apiIntegration.name}`,
-            companyId
+            companyId,
+            [Op.or]: [
+              { session: instance },
+              { name: instance },
+              { name: `Evolution - ${apiIntegration.name}` }
+            ]
           }
         });
         
-        // Se encontrou por nome, atualizar apiIntegrationId
+        // Se encontrou, vincular à ApiIntegration
         if (whatsapp) {
           await whatsapp.update({ apiIntegrationId: apiIntegration.id });
+          logger.info(`[WEBHOOK] Linked existing WhatsApp ${whatsapp.id} to integration ${apiIntegration.id}`);
         }
       }
 
       if (!whatsapp) {
-        // Criar nova conexão vinculada à integração
-        whatsapp = await Whatsapp.create({
-          name: `Evolution - ${apiIntegration.name}`,
-          status: "PENDING",
-          number: instance,
-          isDefault: false,
-          companyId,
-          channel: "whatsapp",
-          apiIntegrationId: apiIntegration.id
-        });
+        // Não criar nova conexão - a conexão deve ser criada manualmente
+        logger.warn(`[WEBHOOK] No WhatsApp connection found for instance: ${instance}. Skipping.`);
+        return;
       }
 
       // Mapear estados da Evolution API para estados internos
@@ -226,6 +204,7 @@ const ProcessEvolutionWebhookService = async (
     logger.info(`[WEBHOOK] Processing message: id=${data.key.id}, from=${data.key.remoteJid}`);
 
     // Buscar conexão WhatsApp por apiIntegrationId
+    const { Op } = require("sequelize");
     let whatsapp = await Whatsapp.findOne({
       where: {
         apiIntegrationId: apiIntegration.id,
@@ -234,31 +213,29 @@ const ProcessEvolutionWebhookService = async (
     });
 
     if (!whatsapp) {
-      // Fallback: buscar por nome (para migração de dados antigos)
+      // Fallback: buscar por session (instanceName) ou nome
       whatsapp = await Whatsapp.findOne({
         where: {
-          name: `Evolution - ${apiIntegration.name}`,
-          companyId
+          companyId,
+          [Op.or]: [
+            { session: instance },
+            { name: instance },
+            { name: `Evolution - ${apiIntegration.name}` }
+          ]
         }
       });
       
-      // Se encontrou por nome, atualizar apiIntegrationId
+      // Se encontrou, vincular à ApiIntegration
       if (whatsapp) {
         await whatsapp.update({ apiIntegrationId: apiIntegration.id });
+        logger.info(`[WEBHOOK] Linked existing WhatsApp ${whatsapp.id} to integration ${apiIntegration.id}`);
       }
     }
 
     if (!whatsapp) {
-      // Criar nova conexão vinculada à integração
-      whatsapp = await Whatsapp.create({
-        name: `Evolution - ${apiIntegration.name}`,
-        status: "CONNECTED",
-        number: instance,
-        isDefault: false,
-        companyId,
-        channel: "whatsapp",
-        apiIntegrationId: apiIntegration.id
-      });
+      // Não criar nova conexão - ignorar webhook
+      logger.warn(`[WEBHOOK] No WhatsApp connection found for instance: ${instance}. Skipping message.`);
+      return;
     }
 
     // Extrair número do contato (remover @s.whatsapp.net e @lid)
