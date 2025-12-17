@@ -322,7 +322,17 @@ export function CompanyForm(props) {
                   </Field>
                 </FormControl>
               </Grid>
-              <Grid xs={12} sm={6} md={4} item>
+              <Grid xs={12} item>
+                <div style={{ 
+                  borderTop: '1px solid #e0e0e0', 
+                  marginTop: 16, 
+                  paddingTop: 16,
+                  marginBottom: 8 
+                }}>
+                  <strong style={{ color: '#666' }}>Configurações Evolution API</strong>
+                </div>
+              </Grid>
+              <Grid xs={12} sm={6} md={6} item>
                 <Field
                   as={TextField}
                   label="URL Evolution API"
@@ -333,7 +343,7 @@ export function CompanyForm(props) {
                   placeholder="https://evolution.seudominio.com"
                 />
               </Grid>
-              <Grid xs={12} sm={6} md={4} item>
+              <Grid xs={12} sm={6} md={6} item>
                 <Field
                   as={TextField}
                   label="Chave API Evolution"
