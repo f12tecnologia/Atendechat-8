@@ -436,15 +436,24 @@ export default function PlansManager() {
         }
         fetchData()
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [record])
+    }, [])
 
     const loadPlans = async () => {
         setLoading(true)
         try {
             const planList = await list()
-            setRecords(planList)
+            console.log("[PlansManager] Plans loaded:", planList)
+            if (Array.isArray(planList)) {
+                setRecords(planList)
+            } else {
+                console.error("[PlansManager] Invalid plans data:", planList)
+                setRecords([])
+                toast.error(i18n.t("plans.toasts.errorList"))
+            }
         } catch (e) {
+            console.error("[PlansManager] Error loading plans:", e)
             toast.error(i18n.t("plans.toasts.errorList"))
+            setRecords([])
         }
         setLoading(false)
     }

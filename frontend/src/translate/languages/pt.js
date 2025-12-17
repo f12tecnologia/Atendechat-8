@@ -175,15 +175,25 @@ const messages = {
           integrations: "Integrações",
           campaigns: "Campanhas",
           schedules: "Agendamentos",
-          enabled: "Habilitadas",
-          disabled: "Desabilitadas",
-          clear: "Cancelar",
+          enabled: "Habilitado",
+          disabled: "Desabilitado",
+          clear: "Limpar",
           delete: "Excluir",
           save: "Salvar",
           yes: "Sim",
           no: "Não",
-          money: "R$",
+          money: "R$"
         },
+        toasts: {
+          success: "Plano salvo com sucesso!",
+          error: "Erro ao salvar o plano",
+          errorList: "Erro ao carregar a lista de planos",
+          errorOperation: "Erro ao realizar operação"
+        },
+        confirm: {
+          title: "Confirmar exclusão",
+          message: "Tem certeza que deseja excluir este plano?"
+        }
       },
       kanban: {
         toasts: {
