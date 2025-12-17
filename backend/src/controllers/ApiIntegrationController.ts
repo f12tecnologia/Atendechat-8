@@ -149,7 +149,6 @@ export const getConnectionStatus = async (req: Request, res: Response): Promise<
       return res.status(400).json({ error: "Instance name is required" });
     }
 
-    // Tenta buscar a integração
     let integration;
     try {
       integration = await ShowApiIntegrationService({
@@ -157,7 +156,6 @@ export const getConnectionStatus = async (req: Request, res: Response): Promise<
         companyId
       });
     } catch (showError: any) {
-      // Se a integração não existe (AppError ERR_NO_INTEGRATION_FOUND), retorna 404 específico
       if (showError.message === "ERR_NO_INTEGRATION_FOUND") {
         logger.warn(`[getConnectionStatus] Integration ${integrationId} not found for company ${companyId}`);
         return res.status(404).json({ 
@@ -165,7 +163,6 @@ export const getConnectionStatus = async (req: Request, res: Response): Promise<
           message: "Integração Evolution API não encontrada. Por favor, crie uma integração primeiro na página 'Integrações Evolution API'."
         });
       }
-      // Outro erro, repropaga
       throw showError;
     }
 
@@ -181,20 +178,20 @@ export const getConnectionStatus = async (req: Request, res: Response): Promise<
 
     logger.info(`[getConnectionStatus] Checking status for instance: ${instanceName}`);
 
-    // Primeiro verifica o status da conexão
+    let statusData = null;
+    let state = null;
+
     try {
-      const statusData = await evolutionService.getInstanceStatus(instanceName);
-      
+      statusData = await evolutionService.getInstanceStatus(instanceName);
       logger.info(`[getConnectionStatus] Instance status:`, statusData);
 
-      // Status válidos que indicam conexão ativa (em UPPERCASE)
       const connectedStates = ["OPEN", "CONNECTED", "CONNECTED_RESTORE"];
+      const connectingStates = ["CONNECTING", "CLOSE", "WAITING"];
       const rawState = statusData.state || statusData.instance?.state;
-      const state = rawState?.toString().toUpperCase();
+      state = rawState?.toString().toUpperCase();
       
       logger.info(`[getConnectionStatus] State normalized: ${rawState} → ${state}`);
       
-      // Se já está conectada, retorna o status
       if (state && connectedStates.includes(state)) {
         return res.status(200).json({
           connected: true,
@@ -203,23 +200,81 @@ export const getConnectionStatus = async (req: Request, res: Response): Promise<
           instanceName: instanceName
         });
       }
+
+      if (state && connectingStates.includes(state)) {
+        logger.info(`[getConnectionStatus] Instance is connecting, fetching QR code via connect endpoint...`);
+        try {
+          const connectData = await evolutionService.connectInstance(instanceName);
+          logger.info(`[getConnectionStatus] Connect response:`, connectData);
+          
+          const qrBase64 = connectData.base64 || connectData.qrcode?.base64;
+          const qrCode = connectData.code || connectData.qrcode?.code;
+          const pairingCode = connectData.pairingCode || connectData.qrcode?.pairingCode;
+          
+          if (qrBase64 || qrCode) {
+            return res.status(200).json({
+              connected: false,
+              qrcode: qrCode,
+              base64: qrBase64,
+              pairingCode: pairingCode,
+              message: "Leia o QR Code para conectar",
+              instanceName: instanceName,
+              state: state
+            });
+          }
+        } catch (connectError: any) {
+          logger.warn(`[getConnectionStatus] Connect failed, trying QR code endpoint: ${connectError.message}`);
+        }
+      }
     } catch (statusError: any) {
-      // Se não conseguir pegar o status, a instância pode não existir
-      logger.warn(`[getConnectionStatus] Could not get status, instance may not exist: ${statusError.message}`);
+      logger.warn(`[getConnectionStatus] Could not get status, trying connect: ${statusError.message}`);
     }
 
-    // Se não está conectada, busca o QR code
-    logger.info(`[getConnectionStatus] Instance not connected, fetching QR code...`);
-    const qrcodeData = await evolutionService.getQrCode(instanceName);
+    logger.info(`[getConnectionStatus] Fetching QR code via connect endpoint...`);
+    try {
+      const connectData = await evolutionService.connectInstance(instanceName);
+      logger.info(`[getConnectionStatus] Connect response:`, connectData);
+      
+      const qrBase64 = connectData.base64 || connectData.qrcode?.base64;
+      const qrCode = connectData.code || connectData.qrcode?.code;
+      const pairingCode = connectData.pairingCode || connectData.qrcode?.pairingCode;
+      
+      if (qrBase64 || qrCode) {
+        return res.status(200).json({
+          connected: false,
+          qrcode: qrCode,
+          base64: qrBase64,
+          pairingCode: pairingCode,
+          message: "Leia o QR Code para conectar",
+          instanceName: instanceName,
+          state: state || "CONNECTING"
+        });
+      }
+    } catch (connectError: any) {
+      logger.warn(`[getConnectionStatus] Connect endpoint failed: ${connectError.message}`);
+    }
 
-    return res.status(200).json({
-      connected: false,
-      qrcode: qrcodeData.qrcode?.code || qrcodeData.code,
-      base64: qrcodeData.qrcode?.base64 || qrcodeData.base64,
-      pairingCode: qrcodeData.qrcode?.pairingCode || qrcodeData.pairingCode,
-      message: "Leia o QR Code para conectar",
-      instanceName: instanceName
-    });
+    try {
+      const qrcodeData = await evolutionService.getQrCode(instanceName);
+      logger.info(`[getConnectionStatus] QR code response:`, qrcodeData);
+      
+      return res.status(200).json({
+        connected: false,
+        qrcode: qrcodeData.qrcode?.code || qrcodeData.code,
+        base64: qrcodeData.qrcode?.base64 || qrcodeData.base64,
+        pairingCode: qrcodeData.qrcode?.pairingCode || qrcodeData.pairingCode,
+        message: "Leia o QR Code para conectar",
+        instanceName: instanceName,
+        state: state || "WAITING"
+      });
+    } catch (qrError: any) {
+      logger.error(`[getConnectionStatus] All methods failed:`, qrError.message);
+      return res.status(500).json({ 
+        error: "Error getting QR code",
+        message: "Não foi possível obter o QR Code. Verifique se a instância existe na Evolution API.",
+        details: qrError.response?.data || qrError.message
+      });
+    }
   } catch (error: any) {
     logger.error(`Error getting connection status:`, {
       message: error.message,
