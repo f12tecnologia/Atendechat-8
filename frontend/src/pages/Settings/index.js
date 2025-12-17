@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useContext } from "react";
+import { useHistory } from "react-router-dom";
 
 import { makeStyles } from "@material-ui/core/styles";
 import Paper from "@material-ui/core/Paper";
 import Typography from "@material-ui/core/Typography";
 import Container from "@material-ui/core/Container";
 import Select from "@material-ui/core/Select";
+import Button from "@material-ui/core/Button";
+import WhatsAppIcon from "@material-ui/icons/WhatsApp";
 import { toast } from "react-toastify";
 
 import api from "../../services/api";
@@ -35,6 +38,7 @@ const useStyles = makeStyles((theme) => ({
 
 const Settings = () => {
   const classes = useStyles();
+  const history = useHistory();
 
   const [settings, setSettings] = useState([]);
 
@@ -120,6 +124,21 @@ const Settings = () => {
               {i18n.t("settings.settings.userCreation.options.disabled")}
             </option>
           </Select>
+        </Paper>
+
+        <Paper className={classes.paper} style={{ marginTop: 16 }}>
+          <Typography variant="body1">
+            Integrações Evolution API
+          </Typography>
+          <Button
+            variant="contained"
+            color="primary"
+            className={classes.settingOption}
+            startIcon={<WhatsAppIcon />}
+            onClick={() => history.push("/evolution-integrations")}
+          >
+            Configurar
+          </Button>
         </Paper>
       </Container>
     </div>

@@ -516,15 +516,6 @@ const MainListItems = (props) => {
                       </ListItemIcon>
                       <ListItemText primary={i18n.t("mainDrawer.listItems.queueIntegration")} />
                     </ListItem>
-                    <ListItem
-                      onClick={() => history.push("/evolution-integrations")}
-                      button
-                    >
-                      <ListItemIcon>
-                        <WhatsAppIcon />
-                      </ListItemIcon>
-                      <ListItemText primary="Integrações Evolution API" />
-                    </ListItem>
                   </List>
                 </Collapse>
               </>
