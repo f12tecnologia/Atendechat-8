@@ -35,7 +35,6 @@ const CreateEvolutionWhatsAppService = async ({
   isDefault = false
 }: Request): Promise<Response> => {
   
-  // Verificar se a integração existe e é válida
   const apiIntegration = await ApiIntegration.findOne({
     where: {
       id: apiIntegrationId,
@@ -49,42 +48,64 @@ const CreateEvolutionWhatsAppService = async ({
     throw new AppError("ERR_NO_EVOLUTION_INTEGRATION_FOUND", 404);
   }
 
-  // Criar o serviço da Evolution API
+  const instanceName = name.toLowerCase().replace(/[^a-z0-9]/g, "_");
+
+  const existingWhatsapp = await Whatsapp.findOne({
+    where: {
+      name,
+      companyId
+    }
+  });
+
+  if (existingWhatsapp) {
+    throw new AppError("ERR_WHATSAPP_NAME_ALREADY_EXISTS", 400);
+  }
+
   const evolutionService = new EvolutionApiService({
     baseUrl: apiIntegration.baseUrl,
     apiKey: apiIntegration.apiKey
   });
 
-  // Gerar um nome de instância único baseado no nome da conexão + timestamp
-  const instanceName = `${name.toLowerCase().replace(/[^a-z0-9]/g, "_")}_${Date.now()}`;
-
-  // Obter o domínio do webhook
   const webhookUrl = `${process.env.BACKEND_URL}/api-integrations/webhook/${companyId}`;
 
   let qrcode: string | null = null;
+  let instanceExists = false;
 
   try {
-    // Criar instância na Evolution API
-    const evolutionInstance = await evolutionService.createInstance({
-      instanceName,
-      qrcode: true,
-      webhookUrl,
-      webhookEvents: [
-        "QRCODE_UPDATED",
-        "MESSAGES_UPSERT",
-        "MESSAGES_UPDATE",
-        "CONNECTION_UPDATE"
-      ]
-    });
+    const instances = await evolutionService.fetchInstances();
+    if (Array.isArray(instances)) {
+      instanceExists = instances.some((inst: any) => 
+        inst.instance?.instanceName === instanceName || 
+        inst.instanceName === instanceName ||
+        inst.name === instanceName
+      );
+    }
+  } catch (e) {
+    logger.warn(`Could not check existing instances: ${(e as Error).message}`);
+  }
 
-    logger.info(`Evolution instance created: ${instanceName}`, evolutionInstance);
+  try {
+    if (!instanceExists) {
+      logger.info(`Evolution API - Creating instance: ${instanceName}`);
+      await evolutionService.createInstance({
+        instanceName,
+        qrcode: true,
+        webhookUrl,
+        webhookEvents: [
+          "QRCODE_UPDATED",
+          "MESSAGES_UPSERT",
+          "MESSAGES_UPDATE",
+          "CONNECTION_UPDATE"
+        ]
+      });
+      logger.info(`Evolution instance created: ${instanceName}`);
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    } else {
+      logger.info(`Evolution instance already exists: ${instanceName}`);
+    }
 
-    // Aguardar um pouco para a instância inicializar
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    // Usar o endpoint /instance/connect para obter o QR code (método correto)
     try {
-      logger.info(`Obtendo QR code via connect endpoint...`);
+      logger.info(`Getting QR code via connect endpoint...`);
       const connectResponse = await evolutionService.connectInstance(instanceName);
       
       if (connectResponse) {
@@ -95,16 +116,13 @@ const CreateEvolutionWhatsAppService = async ({
                  null;
         
         if (qrcode) {
-          logger.info(`✅ QR code obtido com sucesso via connect endpoint`);
-        } else {
-          logger.warn(`⚠️ Resposta do connect não contém QR code:`, connectResponse);
+          logger.info(`QR code obtained successfully`);
         }
       }
     } catch (connectError: any) {
-      logger.warn(`⚠️ Erro ao obter QR code via connect: ${connectError.message}`);
+      logger.warn(`Error getting QR code: ${connectError.message}`);
     }
 
-    // Criar conexão WhatsApp com provider="evolution"
     const { whatsapp, oldDefaultWhatsapp } = await CreateWhatsAppService({
       name,
       status: "PENDING",
@@ -119,13 +137,12 @@ const CreateEvolutionWhatsAppService = async ({
       apiIntegrationId
     });
 
-    // Atualizar com o nome da instância e QR code se disponível
     await whatsapp.update({
       session: instanceName,
       qrcode: qrcode || ""
     });
 
-    logger.info(`WhatsApp connection created for Evolution API: ${name}`);
+    logger.info(`WhatsApp connection created: ${name}`);
 
     return {
       whatsapp,
@@ -133,8 +150,13 @@ const CreateEvolutionWhatsAppService = async ({
       oldDefaultWhatsapp
     };
 
-  } catch (error) {
+  } catch (error: any) {
     logger.error("Error creating Evolution WhatsApp connection:", error);
+    
+    if (error instanceof AppError) {
+      throw error;
+    }
+    
     throw new AppError("ERR_CREATING_EVOLUTION_WHATSAPP");
   }
 };
