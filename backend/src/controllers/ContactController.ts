@@ -153,10 +153,14 @@ export const update = async (
 
   contactData.number = contactData.number.replace(/\D/g, "");
 
-  await CheckIsValidContact(contactData.number, companyId);
-  const validNumber = await CheckContactNumber(contactData.number, companyId);
-  const number = validNumber.jid.replace(/\D/g, "");
-  contactData.number = number;
+  try {
+    await CheckIsValidContact(contactData.number, companyId);
+    const validNumber = await CheckContactNumber(contactData.number, companyId);
+    const number = validNumber.jid.replace(/\D/g, "");
+    contactData.number = number;
+  } catch (err: any) {
+    logger.warn(`Could not validate contact number via WhatsApp (connection may be offline): ${err.message}`);
+  }
 
   const { contactId } = req.params;
 
