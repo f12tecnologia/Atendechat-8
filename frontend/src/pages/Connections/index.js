@@ -360,6 +360,7 @@ const Connections = () => {
                                 open={connectInstanceModalOpen}
                                 onClose={handleCloseConnectInstanceModal}
                                 apiIntegrationId={selectedWhatsApp?.apiIntegrationId}
+                                initialInstanceName={selectedWhatsApp?.session || selectedWhatsApp?.name}
                         />
                         <WhatsAppModal
                                 open={whatsAppModalOpen}

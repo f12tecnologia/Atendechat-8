@@ -47,11 +47,17 @@ const useStyles = makeStyles((theme) => ({
   }
 }));
 
-const ConnectInstanceModal = ({ open, onClose, apiIntegrationId }) => {
+const ConnectInstanceModal = ({ open, onClose, apiIntegrationId, initialInstanceName }) => {
   const classes = useStyles();
   const [instanceName, setInstanceName] = useState("");
   const [loading, setLoading] = useState(false);
   const [connectionData, setConnectionData] = useState(null);
+
+  React.useEffect(() => {
+    if (open && initialInstanceName) {
+      setInstanceName(initialInstanceName);
+    }
+  }, [open, initialInstanceName]);
 
   const handleConnect = async () => {
     if (!instanceName.trim()) {
