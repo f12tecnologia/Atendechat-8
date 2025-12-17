@@ -34,6 +34,7 @@ api.interceptors.request.use(
                 return config;
         },
         error => {
+                console.error("[API] Request error:", error);
                 return Promise.reject(error);
         }
 );
@@ -55,9 +56,12 @@ const processQueue = (error, token = null) => {
 api.interceptors.response.use(
         response => response,
         async error => {
+                console.error("[API] Response error:", error.response?.data || error.message);
+
                 const originalRequest = error.config;
 
                 if (error.response?.status === 401 && !originalRequest._retry) {
+                        console.warn("[API] Unauthorized - Token may be invalid");
                         if (isRefreshing) {
                                 return new Promise((resolve, reject) => {
                                         failedQueue.push({ resolve, reject });

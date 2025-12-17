@@ -1,90 +1,40 @@
-import api, { openApi } from "../../services/api";
+import { useState, useEffect } from "react";
+import toastError from "../../errors/toastError";
+
+import api from "../../services/api";
 
 const usePlans = () => {
+  const [plans, setPlans] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-    const getPlanList = async (params) => {
-        const { data } = await api.request({
-            url: '/plans/list',
-            method: 'GET',
-            params
-        });
-        return data;
-    }
+  useEffect(() => {
+    setLoading(true);
+    const fetchPlans = async () => {
+      try {
+        const { data } = await api.get("/plans/list");
+        console.log("[usePlans] Plans received:", data);
 
-    const getPublicPlanList = async (params) => {
-        const { data } = await openApi.request({
-            url: '/plans/public',
-            method: 'GET',
-            params,
-            headers: {
-                'Accept': 'application/json'
-            }
-        });
-        return data;
-    }
+        if (Array.isArray(data)) {
+          setPlans(data);
+        } else if (data && Array.isArray(data.plans)) {
+          setPlans(data.plans);
+        } else {
+          console.warn("[usePlans] Invalid plans data format:", data);
+          setPlans([]);
+        }
 
-    const list = async (params) => {
-        const { data } = await api.request({
-            url: '/plans/all',
-            method: 'GET',
-            params
-        });
-        return data;
-    }
+        setLoading(false);
+      } catch (err) {
+        console.error("[usePlans] Error fetching plans:", err);
+        setLoading(false);
+        setPlans([]);
+        toastError(err);
+      }
+    };
+    fetchPlans();
+  }, []);
 
-    const finder = async (id) => {
-        const { data } = await api.request({
-            url: `/plans/${id}`,
-            method: 'GET'
-        });
-        return data;
-    }
-
-    const save = async (data) => {
-        const { data: responseData } = await api.request({
-            url: '/plans',
-            method: 'POST',
-            data
-        });
-        return responseData;
-    }
-
-    const update = async (data) => {
-        const { data: responseData } = await api.request({
-            url: `/plans/${data.id}`,
-            method: 'PUT',
-            data
-        });
-        return responseData;
-    }
-
-    const remove = async (id) => {
-        const { data } = await api.request({
-            url: `/plans/${id}`,
-            method: 'DELETE'
-        });
-        return data;
-    }
-
-    const getPlanCompany = async (params, id) => {
-        const { data } = await api.request({
-            url: `/companies/listPlan/${id}`,
-            method: 'GET',
-            params
-        });
-        return data;
-    }
-
-    return {
-        getPlanList,
-        getPublicPlanList,
-        list,
-        save,
-        update,
-        finder,
-        remove,
-        getPlanCompany
-    }
-}
+  return { plans, loading };
+};
 
 export default usePlans;

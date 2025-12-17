@@ -6,9 +6,9 @@ import * as PlanController from "../controllers/PlanController";
 
 const planRoutes = express.Router();
 
-planRoutes.get("/plans", isAuth, PlanController.index);
+planRoutes.get("/plans/list", PlanController.list);
 
-planRoutes.get("/plans/list", isAuth, PlanController.list);
+planRoutes.get("/plans", isAuth, PlanController.index);
 
 planRoutes.get("/plans/all", isAuth, PlanController.list);
 
