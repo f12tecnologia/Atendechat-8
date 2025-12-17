@@ -1,29 +1,31 @@
 #!/bin/bash
-set -e
 
-echo "Starting Atendechat..."
-
-if ! redis-cli ping > /dev/null 2>&1; then
-    redis-server --daemonize yes --port 6379 --protected-mode no
-    for i in {1..10}; do
-        redis-cli ping > /dev/null 2>&1 && echo "Redis started" && break
-        sleep 1
-    done
+# Verificar se o build do frontend existe
+if [ ! -d "frontend/build" ]; then
+  echo "Frontend build não encontrado. Executando build..."
+  cd frontend
+  npm run build
+  cd ..
 fi
 
-export NODE_ENV=production
-
-cd /home/runner/workspace/backend
-PORT=8080 node dist/server.js &
+# Iniciar backend com porta correta
+cd backend
+PORT=8080 npm start &
 BACKEND_PID=$!
 
-sleep 3
+# Aguardar o backend iniciar
+sleep 5
 
-cd /home/runner/workspace/frontend
-npx serve -s build -l 5000 -n &
+# Iniciar servidor de produção do frontend na porta 5000
+cd ../frontend
+PORT=5000 node server.js &
 FRONTEND_PID=$!
 
-trap "kill $BACKEND_PID $FRONTEND_PID 2>/dev/null" EXIT
+echo "Sistema iniciado!"
+echo "Backend rodando na porta 8080"
+echo "Frontend rodando na porta 5000"
+echo "Backend PID: $BACKEND_PID"
+echo "Frontend PID: $FRONTEND_PID"
 
-wait -n $BACKEND_PID $FRONTEND_PID
-exit 1
+# Manter o script rodando
+wait

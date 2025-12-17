@@ -63,10 +63,10 @@ app.get("*", (req: Request, res: Response) => {
   if (req.path.startsWith("/api") || req.path.startsWith("/socket.io")) {
     return res.status(404).json({ error: "Not found" });
   }
-  
+
   const frontendBuildPath = path.join(__dirname, "..", "..", "frontend", "build");
   const indexPath = path.join(frontendBuildPath, "index.html");
-  
+
   if (fs.existsSync(indexPath)) {
     res.sendFile(indexPath);
   } else {
