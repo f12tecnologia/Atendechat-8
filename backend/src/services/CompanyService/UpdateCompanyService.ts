@@ -12,6 +12,8 @@ interface CompanyData {
   campaignsEnabled?: boolean;
   dueDate?: string;
   recurrence?: string;
+  evolutionApiUrl?: string;
+  evolutionApiKey?: string;
 }
 
 const UpdateCompanyService = async (
@@ -26,7 +28,9 @@ const UpdateCompanyService = async (
     planId,
     campaignsEnabled,
     dueDate,
-    recurrence
+    recurrence,
+    evolutionApiUrl,
+    evolutionApiKey
   } = companyData;
 
   if (!company) {
@@ -40,7 +44,9 @@ const UpdateCompanyService = async (
     status,
     planId,
     dueDate,
-    recurrence
+    recurrence,
+    evolutionApiUrl,
+    evolutionApiKey
   });
 
   if (companyData.campaignsEnabled !== undefined) {
