@@ -36,6 +36,7 @@ const corsOrigins = [
   "https://mychat.intelfoz.app.br",
   "http://mychat.intelfoz.app.br",
   "http://localhost:5000",
+  "http://localhost:8080",
   "http://localhost:3000"
 ].filter(Boolean);
 

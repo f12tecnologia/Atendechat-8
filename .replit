@@ -7,16 +7,12 @@ channel = "stable-25_05"
 packages = ["redis"]
 
 [[ports]]
-localPort = 3000
-externalPort = 3003
-
-[[ports]]
 localPort = 5000
 externalPort = 80
 
 [[ports]]
 localPort = 6379
-externalPort = 3000
+externalPort = 6379
 
 [[ports]]
 localPort = 8080
