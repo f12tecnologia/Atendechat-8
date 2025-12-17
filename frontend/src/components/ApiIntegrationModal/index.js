@@ -16,6 +16,7 @@ import MenuItem from "@material-ui/core/MenuItem";
 import FormControl from "@material-ui/core/FormControl";
 import FormControlLabel from "@material-ui/core/FormControlLabel";
 import Switch from "@material-ui/core/Switch";
+import Typography from "@material-ui/core/Typography";
 
 import { i18n } from "../../translate/i18n";
 import api from "../../services/api";
@@ -63,6 +64,34 @@ const ApiIntegrationModal = ({ open, onClose, integrationId, defaultType = "evol
   };
 
   const [integration, setIntegration] = useState(initialState);
+  const [companyConfig, setCompanyConfig] = useState({ evolutionApiUrl: "", evolutionApiKey: "" });
+  const [loadingCompany, setLoadingCompany] = useState(false);
+
+  useEffect(() => {
+    const fetchCompanyConfig = async () => {
+      if (!open) return;
+      setLoadingCompany(true);
+      try {
+        const companyId = localStorage.getItem("companyId");
+        const { data } = await api.get(`/companies/${companyId}`);
+        setCompanyConfig({
+          evolutionApiUrl: data.evolutionApiUrl || "",
+          evolutionApiKey: data.evolutionApiKey || ""
+        });
+        if (!integrationId && data.evolutionApiUrl) {
+          setIntegration((prev) => ({
+            ...prev,
+            baseUrl: data.evolutionApiUrl,
+            apiKey: data.evolutionApiKey || ""
+          }));
+        }
+      } catch (err) {
+        console.log("Could not fetch company config:", err);
+      }
+      setLoadingCompany(false);
+    };
+    fetchCompanyConfig();
+  }, [open, integrationId]);
 
   useEffect(() => {
     const fetchIntegration = async () => {
@@ -163,30 +192,58 @@ const ApiIntegrationModal = ({ open, onClose, integrationId, defaultType = "evol
                   className={classes.textField}
                   required
                 />
-                <Field
-                  as={TextField}
-                  label={i18n.t("apiIntegrationModal.form.baseUrl")}
-                  name="baseUrl"
-                  error={touched.baseUrl && Boolean(errors.baseUrl)}
-                  helperText={touched.baseUrl && errors.baseUrl}
-                  variant="outlined"
-                  margin="dense"
-                  fullWidth
-                  className={classes.textField}
-                  required
-                />
-                <Field
-                  as={TextField}
-                  label={i18n.t("apiIntegrationModal.form.apiKey")}
-                  type="password"
-                  name="apiKey"
-                  error={touched.apiKey && Boolean(errors.apiKey)}
-                  helperText={touched.apiKey && errors.apiKey}
-                  variant="outlined"
-                  margin="dense"
-                  fullWidth
-                  className={classes.textField}
-                />
+                {values.type === "evolution" && companyConfig.evolutionApiUrl && companyConfig.evolutionApiKey && !integrationId ? (
+                  <>
+                    <Typography variant="body2" color="textSecondary" style={{ marginBottom: 16, padding: 8, backgroundColor: '#e8f5e9', borderRadius: 4 }}>
+                      Usando configurações da empresa
+                    </Typography>
+                    <TextField
+                      label={i18n.t("apiIntegrationModal.form.baseUrl")}
+                      value={companyConfig.evolutionApiUrl}
+                      variant="outlined"
+                      margin="dense"
+                      fullWidth
+                      className={classes.textField}
+                      disabled
+                    />
+                    <TextField
+                      label={i18n.t("apiIntegrationModal.form.apiKey")}
+                      value="••••••••••••"
+                      variant="outlined"
+                      margin="dense"
+                      fullWidth
+                      className={classes.textField}
+                      disabled
+                    />
+                  </>
+                ) : (
+                  <>
+                    <Field
+                      as={TextField}
+                      label={i18n.t("apiIntegrationModal.form.baseUrl")}
+                      name="baseUrl"
+                      error={touched.baseUrl && Boolean(errors.baseUrl)}
+                      helperText={touched.baseUrl && errors.baseUrl}
+                      variant="outlined"
+                      margin="dense"
+                      fullWidth
+                      className={classes.textField}
+                      required
+                    />
+                    <Field
+                      as={TextField}
+                      label={i18n.t("apiIntegrationModal.form.apiKey")}
+                      type="password"
+                      name="apiKey"
+                      error={touched.apiKey && Boolean(errors.apiKey)}
+                      helperText={touched.apiKey && errors.apiKey}
+                      variant="outlined"
+                      margin="dense"
+                      fullWidth
+                      className={classes.textField}
+                    />
+                  </>
+                )}
                 {values.type === "evolution" && (
                   <>
                     <Field
