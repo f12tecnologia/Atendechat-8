@@ -28,36 +28,11 @@ app.set("queues", {
 const bodyparser = require('body-parser');
 app.use(bodyParser.json({ limit: '10mb' }));
 
-// Dynamic CORS configuration for production
-const corsOrigins = [
-  process.env.FRONTEND_URL,
-  process.env.BACKEND_URL,
-  "https://mychat.dreamsparkshow.com.br",
-  "https://mychat.intelfoz.app.br",
-  "http://mychat.intelfoz.app.br",
-  "http://localhost:5000",
-  "http://localhost:8080",
-  "http://localhost:3000"
-].filter(Boolean);
-
+// Simple CORS configuration - allow all origins in development
 app.use(
   cors({
     credentials: true,
-    origin: function(origin, callback) {
-      // Allow requests with no origin (mobile apps, curl, etc)
-      if (!origin) return callback(null, true);
-      
-      // Check if origin is in allowed list or matches Replit domains
-      if (corsOrigins.some(allowed => origin.includes(allowed as string)) || 
-          origin.includes('.replit.dev') || 
-          origin.includes('.replit.app') ||
-          origin.includes('localhost')) {
-        return callback(null, true);
-      }
-      
-      // Allow any origin for now (can be restricted later)
-      return callback(null, true);
-    },
+    origin: true, // Allow all origins
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept']
   })
@@ -73,6 +48,11 @@ if (fs.existsSync(frontendBuildPath)) {
   logger.info("Serving frontend from: " + frontendBuildPath);
   app.use(express.static(frontendBuildPath));
 }
+
+// Health check route
+app.get("/health", (req: Request, res: Response) => {
+  res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
+});
 
 // API routes
 app.use(routes);
