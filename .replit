@@ -11,28 +11,11 @@ localPort = 5000
 externalPort = 80
 
 [[ports]]
-localPort = 6379
-externalPort = 6379
-
-[[ports]]
 localPort = 8080
 externalPort = 8080
 
 [workflows]
 runButton = "Project"
-
-[[workflows.workflow]]
-name = "Production"
-mode = "parallel"
-author = "agent"
-
-[workflows.workflow.metadata]
-outputType = "webview"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "bash start-production.sh"
-waitForPort = 5000
 
 [[workflows.workflow]]
 name = "Project"
@@ -50,6 +33,18 @@ args = "cd frontend && PORT=3000 BROWSER=none npm start"
 [[workflows.workflow.tasks]]
 task = "workflow.run"
 args = "Production"
+
+[[workflows.workflow]]
+name = "Production"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "bash start-production.sh"
+waitForPort = 5000
+
+[workflows.workflow.metadata]
+outputType = "webview"
 
 # Configuração de Deployment
 [deployment]

@@ -72,7 +72,6 @@ const useStyles = makeStyles((theme) => ({
 export function CompanyForm(props) {
   const { onSubmit, onDelete, onCancel, initialValue, loading } = props;
   const classes = useStyles();
-  const [plans, setPlans] = useState([]);
   const [modalUser, setModalUser] = useState(false);
   const [firstUser, setFirstUser] = useState({});
 
@@ -90,16 +89,7 @@ export function CompanyForm(props) {
     ...initialValue,
   });
 
-  const { list: listPlans } = usePlans();
-
-  useEffect(() => {
-    async function fetchData() {
-      const list = await listPlans();
-      setPlans(list);
-    }
-    fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const { plans } = usePlans();
 
   useEffect(() => {
     setRecord((prev) => {
