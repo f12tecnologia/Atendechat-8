@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext, useRef } from "react";
 import * as Yup from "yup";
 import { Formik, Form, Field } from "formik";
 import { toast } from "react-toastify";
@@ -31,6 +31,7 @@ import { i18n } from "../../translate/i18n";
 import toastError from "../../errors/toastError";
 import QueueSelect from "../QueueSelect";
 import ApiIntegrationModal from "../ApiIntegrationModal";
+import { SocketContext } from "../../context/Socket/SocketContext";
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -69,6 +70,7 @@ const SessionSchema = Yup.object().shape({
 const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
 
   const classes = useStyles();
+  const socketManager = useContext(SocketContext);
   const initialState = {
     name: "",
     greetingMessage: "",
@@ -78,8 +80,6 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
     isDefault: false,
     token: "",
     provider: "beta",
-    //timeSendQueue: 0,
-    //sendIdQueue: 0,
     expiresInactiveMessage: "",
     expiresTicket: 0,
     timeUseBotQueues: 0,
@@ -100,6 +100,8 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
   const [selectedEvolutionIntegration, setSelectedEvolutionIntegration] = useState(null);
   const [qrCode, setQrCode] = useState(null);
   const [integrationModalOpen, setIntegrationModalOpen] = useState(false);
+  const [createdWhatsAppId, setCreatedWhatsAppId] = useState(null);
+  const createdWhatsAppIdRef = useRef(null);
   
     useEffect(() => {
       const fetchSession = async () => {
@@ -173,6 +175,30 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
     })();
   }, []);
 
+  // Socket listener to auto-close modal when Evolution connection is established
+  useEffect(() => {
+    if (!open) return;
+    
+    const companyId = localStorage.getItem("companyId");
+    const socket = socketManager.getSocket(companyId);
+
+    const handleWhatsAppUpdate = (data) => {
+      const targetId = createdWhatsAppIdRef.current;
+      if (targetId && data.whatsapp && data.whatsapp.id === targetId) {
+        if (data.whatsapp.status === "CONNECTED") {
+          toast.success("Conexão estabelecida com sucesso!");
+          handleClose();
+        }
+      }
+    };
+
+    socket.on(`company-${companyId}-whatsapp`, handleWhatsAppUpdate);
+
+    return () => {
+      socket.off(`company-${companyId}-whatsapp`, handleWhatsAppUpdate);
+    };
+  }, [open, socketManager]);
+
   const handleSaveWhatsApp = async (values) => {
     const whatsappData = {
       ...values, queueIds: selectedQueueIds, transferQueueId: selectedQueueId,
@@ -184,10 +210,12 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
 
     try {
       if (whatsAppId) {
+        // Editing existing connection - just save settings, don't create new
         await api.put(`/whatsapp/${whatsAppId}`, whatsappData);
         toast.success(i18n.t("whatsappModal.success"));
         handleClose();
       } else {
+        // Creating new connection
         if (provider === "evolution") {
           if (!selectedEvolutionIntegration) {
             toast.error("Selecione uma integração Evolution API antes de continuar");
@@ -198,6 +226,13 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
             apiIntegrationId: selectedEvolutionIntegration
           };
           const { data } = await api.post("/whatsapp/evolution", evolutionData);
+          
+          // Store the created WhatsApp ID to track connection status
+          if (data.whatsapp && data.whatsapp.id) {
+            setCreatedWhatsAppId(data.whatsapp.id);
+            createdWhatsAppIdRef.current = data.whatsapp.id;
+          }
+          
           if (data.qrcode) {
             setQrCode(data.qrcode);
           }
@@ -229,6 +264,10 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
 
   const handleClose = () => {
     setQrCode(null);
+    setCreatedWhatsAppId(null);
+    createdWhatsAppIdRef.current = null;
+    setProvider("baileys");
+    setSelectedEvolutionIntegration(null);
     onClose();
     setWhatsApp(initialState);
     setSelectedQueueId(null);
