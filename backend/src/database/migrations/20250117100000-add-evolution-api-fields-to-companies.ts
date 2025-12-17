@@ -3,7 +3,7 @@ import { QueryInterface, DataTypes } from "sequelize";
 module.exports = {
   up: (queryInterface: QueryInterface) => {
     return queryInterface.sequelize.transaction(async (t) => {
-      const tableDescription = await queryInterface.describeTable("Companies");
+      const tableDescription: any = await queryInterface.describeTable("Companies");
 
       if (!tableDescription.evolutionApiUrl) {
         await queryInterface.addColumn(

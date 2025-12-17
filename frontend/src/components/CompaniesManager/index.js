@@ -85,6 +85,8 @@ export function CompanyForm(props) {
     campaignsEnabled: false,
     dueDate: "",
     recurrence: "",
+    evolutionApiUrl: "",
+    evolutionApiKey: "",
     ...initialValue,
   });
 
@@ -317,12 +319,31 @@ export function CompanyForm(props) {
                     margin="dense"
                   >
                     <MenuItem value="MENSAL">{i18n.t("settings.company.form.monthly")}</MenuItem>
-                    {/*<MenuItem value="BIMESTRAL">Bimestral</MenuItem>*/}
-                    {/*<MenuItem value="TRIMESTRAL">Trimestral</MenuItem>*/}
-                    {/*<MenuItem value="SEMESTRAL">Semestral</MenuItem>*/}
-                    {/*<MenuItem value="ANUAL">Anual</MenuItem>*/}
                   </Field>
                 </FormControl>
+              </Grid>
+              <Grid xs={12} sm={6} md={4} item>
+                <Field
+                  as={TextField}
+                  label="URL Evolution API"
+                  name="evolutionApiUrl"
+                  variant="outlined"
+                  className={classes.fullWidth}
+                  margin="dense"
+                  placeholder="https://evolution.seudominio.com"
+                />
+              </Grid>
+              <Grid xs={12} sm={6} md={4} item>
+                <Field
+                  as={TextField}
+                  label="Chave API Evolution"
+                  name="evolutionApiKey"
+                  variant="outlined"
+                  className={classes.fullWidth}
+                  margin="dense"
+                  type="password"
+                  placeholder="Sua chave API"
+                />
               </Grid>
               <Grid xs={12} item>
                 <Grid justifyContent="flex-end" spacing={1} container>
@@ -510,6 +531,8 @@ export default function CompaniesManager() {
     campaignsEnabled: false,
     dueDate: "",
     recurrence: "",
+    evolutionApiUrl: "",
+    evolutionApiKey: "",
   });
 
   useEffect(() => {
@@ -577,6 +600,8 @@ export default function CompaniesManager() {
       campaignsEnabled: false,
       dueDate: "",
       recurrence: "",
+      evolutionApiUrl: "",
+      evolutionApiKey: "",
     }));
   };
 
@@ -602,6 +627,8 @@ export default function CompaniesManager() {
       campaignsEnabled,
       dueDate: data.dueDate || "",
       recurrence: data.recurrence || "",
+      evolutionApiUrl: data.evolutionApiUrl || "",
+      evolutionApiKey: data.evolutionApiKey || "",
     }));
   };
 
