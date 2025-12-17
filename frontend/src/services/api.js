@@ -4,11 +4,11 @@ const getBaseUrl = () => {
         if (process.env.REACT_APP_BACKEND_URL) {
                 return process.env.REACT_APP_BACKEND_URL;
         }
-        // In production, backend runs on port 8080
+        // In production, use same origin (backend serves frontend)
         if (typeof window !== 'undefined' && window.location.hostname) {
-                return `${window.location.protocol}//${window.location.hostname}:8080`;
+                return `${window.location.protocol}//${window.location.hostname}`;
         }
-        return 'http://localhost:8080';
+        return 'http://localhost:5000';
 };
 
 const api = axios.create({

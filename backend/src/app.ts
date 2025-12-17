@@ -67,57 +67,25 @@ app.use(express.json());
 app.use(Sentry.Handlers.requestHandler());
 app.use("/public", express.static(uploadConfig.directory));
 
-// Serve frontend static files BEFORE API routes
+// Serve frontend build if it exists
 const frontendBuildPath = path.join(__dirname, "..", "..", "frontend", "build");
 if (fs.existsSync(frontendBuildPath)) {
-  // Serve static assets (js, css, images, etc) with cache for versioned files
-  app.use(express.static(frontendBuildPath, {
-    maxAge: '1y',
-    setHeaders: (res, filePath) => {
-      // index.html should never be cached
-      if (filePath.endsWith('index.html')) {
-        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-        res.setHeader('Pragma', 'no-cache');
-        res.setHeader('Expires', '0');
-      }
-    }
-  }));
-  
-  // Middleware to serve index.html for browser navigation BEFORE API routes
-  app.use((req: Request, res: Response, next: NextFunction) => {
-    // For browser navigation requests (Accept: text/html), serve the React app
-    const acceptHeader = req.headers.accept || "";
-    const isBrowserRequest = acceptHeader.includes("text/html") && req.method === "GET";
-    
-    // Paths that should always go to API even if browser requests
-    const alwaysApiPaths = ['/auth/login', '/auth/logout', '/auth/signup'];
-    const isAlwaysApi = alwaysApiPaths.some(p => req.path.startsWith(p));
-    
-    if (isBrowserRequest && !isAlwaysApi) {
-      // Browser navigation - serve React app for client-side routing with no-cache
-      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-      res.setHeader('Pragma', 'no-cache');
-      res.setHeader('Expires', '0');
-      return res.sendFile(path.join(frontendBuildPath, "index.html"));
-    }
-    
-    next();
-  });
+  logger.info("Serving frontend from: " + frontendBuildPath);
+  app.use(express.static(frontendBuildPath));
 }
 
 // API routes
 app.use(routes);
 
-// Fallback for unmatched routes in production - serve frontend
-if (process.env.NODE_ENV === "production") {
-  app.get("*", (req: Request, res: Response) => {
-    if (fs.existsSync(frontendBuildPath)) {
-      res.sendFile(path.join(frontendBuildPath, "index.html"));
-    } else {
-      res.status(404).json({ error: "Not found" });
-    }
-  });
-}
+// Catch-all route to serve frontend index.html for client-side routing
+app.get("*", (req: Request, res: Response) => {
+  const frontendBuildPath = path.join(__dirname, "..", "..", "frontend", "build");
+  if (fs.existsSync(frontendBuildPath)) {
+    res.sendFile(path.join(frontendBuildPath, "index.html"));
+  } else {
+    res.status(404).json({ error: "Frontend not built. Run: cd frontend && npm run build" });
+  }
+});
 
 app.use(Sentry.Handlers.errorHandler());
 

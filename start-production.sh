@@ -30,18 +30,19 @@ echo ""
 # Set production environment
 export NODE_ENV=production
 
-echo "🖥️  Starting backend on port 8080..."
+echo "🖥️  Starting backend on port 5000..."
 cd backend
-PORT=8080 node dist/server.js &
+PORT=5000 node dist/server.js &
 BACKEND_PID=$!
 
 echo "⏳ Waiting for backend to be ready..."
-sleep 5
+sleep 8
 
-echo "🌐 Starting frontend on port 5000..."
-cd ../frontend
-PORT=5000 BROWSER=none npm start &
-FRONTEND_PID=$!
+echo "✅ Backend ready on port 5000"
+echo "   Access the application at the URL provided by Replit"
+
+# Keep backend running in foreground
+wait $BACKEND_PID
 
 echo "✅ Production services started!"
 echo "   - Backend API: http://localhost:8080"
