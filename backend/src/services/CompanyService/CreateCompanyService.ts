@@ -15,6 +15,8 @@ interface CompanyData {
   campaignsEnabled?: boolean;
   dueDate?: string;
   recurrence?: string;
+  evolutionApiUrl?: string;
+  evolutionApiKey?: string;
 }
 
 const CreateCompanyService = async (
@@ -29,7 +31,9 @@ const CreateCompanyService = async (
     campaignsEnabled,
     dueDate,
     recurrence,
-    password
+    password,
+    evolutionApiUrl,
+    evolutionApiKey
   } = companyData;
 
   const companySchema = Yup.object().shape({
@@ -65,7 +69,9 @@ const CreateCompanyService = async (
     status,
     planId,
     dueDate,
-    recurrence
+    recurrence,
+    evolutionApiUrl,
+    evolutionApiKey
   });
 
   const passwordHash = await hash(password || "123456", 8);
@@ -198,7 +204,7 @@ const CreateCompanyService = async (
 
  // Enviar mensagem ao aceitar ticket
     await Setting.findOrCreate({
-	where:{
+        where:{
       companyId: company.id,
       key: "sendGreetingAccepted",
     },
@@ -211,7 +217,7 @@ const CreateCompanyService = async (
 
  // Enviar mensagem de transferencia
     await Setting.findOrCreate({
-	where:{
+        where:{
       companyId: company.id,
       key: "sendMsgTransfTicket",
     },
