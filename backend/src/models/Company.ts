@@ -54,6 +54,18 @@ class Company extends Model<Company> {
   language: string;
 
   @Column({
+    type: DataType.STRING,
+    allowNull: true
+  })
+  evolutionApiUrl: string;
+
+  @Column({
+    type: DataType.STRING,
+    allowNull: true
+  })
+  evolutionApiKey: string;
+
+  @Column({
     type: DataType.JSONB
   })
   schedules: [];
