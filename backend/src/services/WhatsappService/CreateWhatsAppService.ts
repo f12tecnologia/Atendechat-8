@@ -82,6 +82,18 @@ const CreateWhatsAppService = async ({
     }
   }
 
+  // Extract phone number from name (removes prefixes like "Evolution - ")
+  const extractPhoneNumber = (connectionName: string): string => {
+    // Remove common prefixes and extract just the number
+    const cleaned = connectionName
+      .replace(/^evolution\s*-?\s*/i, "")
+      .replace(/^whatsapp\s*-?\s*/i, "")
+      .replace(/[^0-9]/g, "");
+    return cleaned;
+  };
+
+  const phoneNumber = extractPhoneNumber(name);
+
   const schema = Yup.object().shape({
     name: Yup.string()
       .required()
@@ -92,9 +104,32 @@ const CreateWhatsAppService = async ({
         async value => {
           if (!value) return false;
           const nameExists = await Whatsapp.findOne({
-            where: { name: value }
+            where: { name: value, companyId }
           });
           return !nameExists;
+        }
+      )
+      .test(
+        "Check-phone-duplicate",
+        "Já existe uma conexão com este número de telefone",
+        async value => {
+          if (!value) return false;
+          const inputPhone = extractPhoneNumber(value);
+          if (!inputPhone || inputPhone.length < 8) return true; // Skip check for non-phone names
+          
+          // Find any existing connection with the same phone number
+          const { Op } = require("sequelize");
+          const existingConnections = await Whatsapp.findAll({
+            where: { companyId }
+          });
+          
+          for (const conn of existingConnections) {
+            const connPhone = extractPhoneNumber(conn.name);
+            if (connPhone === inputPhone) {
+              return false; // Duplicate found
+            }
+          }
+          return true;
         }
       ),
     isDefault: Yup.boolean().required()
