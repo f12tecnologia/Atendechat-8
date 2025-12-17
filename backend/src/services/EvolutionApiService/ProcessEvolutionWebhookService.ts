@@ -112,15 +112,15 @@ const ProcessEvolutionWebhookService = async (
       });
 
       if (!whatsapp) {
-        // Fallback: buscar por session (instanceName) ou nome
+        // Fallback: buscar por session (instanceName) ou nome (sem prefixo duplicado)
         const { Op } = require("sequelize");
         whatsapp = await Whatsapp.findOne({
           where: {
             companyId,
+            provider: "evolution",
             [Op.or]: [
               { session: instance },
-              { name: instance },
-              { name: `Evolution - ${apiIntegration.name}` }
+              { name: instance }
             ]
           }
         });
@@ -134,7 +134,7 @@ const ProcessEvolutionWebhookService = async (
 
       if (!whatsapp) {
         // Não criar nova conexão - a conexão deve ser criada manualmente
-        logger.warn(`[WEBHOOK] No WhatsApp connection found for instance: ${instance}. Skipping.`);
+        logger.warn(`[WEBHOOK] No WhatsApp connection found for instance: ${instance}. Skipping connection update.`);
         return;
       }
 
@@ -213,14 +213,14 @@ const ProcessEvolutionWebhookService = async (
     });
 
     if (!whatsapp) {
-      // Fallback: buscar por session (instanceName) ou nome
+      // Fallback: buscar por session (instanceName) ou nome (sem prefixo duplicado)
       whatsapp = await Whatsapp.findOne({
         where: {
           companyId,
+          provider: "evolution",
           [Op.or]: [
             { session: instance },
-            { name: instance },
-            { name: `Evolution - ${apiIntegration.name}` }
+            { name: instance }
           ]
         }
       });

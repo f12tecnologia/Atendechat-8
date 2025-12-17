@@ -10,8 +10,15 @@ export const StartAllWhatsAppsSessions = async (
     const whatsapps = await ListWhatsAppsService({ companyId });
     if (whatsapps.length > 0) {
       for (const whatsapp of whatsapps) {
+        // Skip Evolution connections (managed externally)
         if (whatsapp.provider === "evolution") {
           logger.info(`Skipping Evolution API session: ${whatsapp.name} (managed externally)`);
+          continue;
+        }
+        
+        // Skip connections with names starting with "Evolution" (orphaned/duplicate entries)
+        if (whatsapp.name.toLowerCase().startsWith("evolution")) {
+          logger.warn(`Skipping orphaned Evolution connection: ${whatsapp.name}`);
           continue;
         }
         
