@@ -5,6 +5,7 @@
   },
   "dependencies": {
     "@google-cloud/dialogflow": "^7.4.0",
-    "http-proxy-middleware": "^2.0.9"
+    "http-proxy-middleware": "^2.0.9",
+    "openai": "^6.14.0"
   }
 }

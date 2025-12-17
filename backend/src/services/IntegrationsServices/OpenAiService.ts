@@ -13,7 +13,7 @@ import { isNil, isNull } from "lodash";
 import fs from "fs";
 import path, { join } from "path";
 
-import OpenAI, {Configuration, OpenAIApi} from "openai";
+import OpenAI from "openai";
 import Ticket from "../../models/Ticket";
 import Contact from "../../models/Contact";
 import Message from "../../models/Message";
@@ -36,7 +36,7 @@ interface IMe {
   id: string;
 }
 
-interface SessionOpenAi extends OpenAIApi {
+interface SessionOpenAi extends OpenAI {
   id?: number;
 }
 const sessionsOpenAi: SessionOpenAi[] = [];
@@ -99,14 +99,14 @@ export const handleOpenAi = async (
     `company${ticket.companyId}`
   );
 
-  let openai: OpenAIApi | any;
+  let openai: OpenAI | any;
   const openAiIndex = sessionsOpenAi.findIndex(s => s.id === ticket.id);
 
   if (openAiIndex === -1) {
-    const configuration = new Configuration({
-      apiKey: openAiSettings.apiKey
+    openai = new OpenAI({
+      apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY || openAiSettings.apiKey,
+      baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL || undefined
     });
-    openai = new OpenAIApi(configuration);
     openai.id = ticket.id;
     sessionsOpenAi.push(openai);
   } else {
@@ -153,14 +153,14 @@ export const handleOpenAi = async (
 
     console.log(156, "OpenAiService");
 
-    const chat = await openai.createChatCompletion({
-      model: "gpt-3.5-turbo-1106",
+    const chat = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
       messages: messagesOpenAi,
       max_tokens: openAiSettings.maxTokens,
       temperature: openAiSettings.temperature
     });
 
-    let response = chat.data.choices[0].message?.content;
+    let response = chat.choices[0].message?.content;
 
     if (response?.includes("Ação: Transferir para o setor de atendimento")) {
       console.log(166, "OpenAiService");
