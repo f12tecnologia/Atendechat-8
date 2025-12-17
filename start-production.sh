@@ -20,7 +20,7 @@ BACKEND_PID=$!
 sleep 3
 
 cd /home/runner/workspace/frontend
-npx serve -s build -l 5000 &
+npx serve -s build -l 5000 -n &
 FRONTEND_PID=$!
 
 trap "kill $BACKEND_PID $FRONTEND_PID 2>/dev/null" EXIT

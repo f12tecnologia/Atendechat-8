@@ -59,9 +59,16 @@ app.use(routes);
 
 // Catch-all route to serve frontend index.html for client-side routing
 app.get("*", (req: Request, res: Response) => {
+  // Skip API routes
+  if (req.path.startsWith("/api") || req.path.startsWith("/socket.io")) {
+    return res.status(404).json({ error: "Not found" });
+  }
+  
   const frontendBuildPath = path.join(__dirname, "..", "..", "frontend", "build");
-  if (fs.existsSync(frontendBuildPath)) {
-    res.sendFile(path.join(frontendBuildPath, "index.html"));
+  const indexPath = path.join(frontendBuildPath, "index.html");
+  
+  if (fs.existsSync(indexPath)) {
+    res.sendFile(indexPath);
   } else {
     res.status(404).json({ error: "Frontend not built. Run: cd frontend && npm run build" });
   }
