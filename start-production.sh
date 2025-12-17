@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# Kill any existing processes on ports 8080 and 5000
+pkill -f "node dist/server.js" 2>/dev/null || true
+pkill -f "node server.js" 2>/dev/null || true
+sleep 2
+
 # Verificar se o build do frontend existe
 if [ ! -d "frontend/build" ]; then
   echo "Frontend build não encontrado. Executando build..."
@@ -8,13 +13,13 @@ if [ ! -d "frontend/build" ]; then
   cd ..
 fi
 
-# Iniciar backend com porta correta
+# Iniciar backend diretamente (sem nodemon para produção estável)
 cd backend
-PORT=8080 npm start &
+PORT=8080 node dist/server.js &
 BACKEND_PID=$!
 
 # Aguardar o backend iniciar
-sleep 5
+sleep 3
 
 # Iniciar servidor de produção do frontend na porta 5000
 cd ../frontend
