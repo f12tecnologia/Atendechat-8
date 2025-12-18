@@ -3,14 +3,15 @@ import * as Sentry from "@sentry/node";
 import fs from "fs";
 import { exec } from "child_process";
 import path from "path";
+import { v4 as uuidv4 } from "uuid";
 import ffmpegPath from "@ffmpeg-installer/ffmpeg";
 import AppError from "../../errors/AppError";
 import GetTicketWbot from "../../helpers/GetTicketWbot";
 import Ticket from "../../models/Ticket";
 import { lookup } from "mime-types";
 import formatBody from "../../helpers/Mustache";
-
 import ProviderFactory from "./providers/ProviderFactory";
+import CreateMessageService from "../MessageServices/CreateMessageService";
 
 interface Request {
   media: Express.Multer.File;
@@ -67,10 +68,9 @@ export const getMessageOptions = async (
         video: fs.readFileSync(pathMedia),
         caption: body ? body : "",
         fileName: fileName
-        // gifPlayback: true
       };
     } else if (typeMessage === "audio") {
-      const typeAudio = true; //fileName.includes("audio-record-site");
+      const typeAudio = true;
       const convert = await processAudio(pathMedia);
       if (typeAudio) {
         options = {
@@ -128,6 +128,46 @@ const SendWhatsAppMedia = async ({
     ticket,
     body
   });
+
+  // For Evolution provider, save the message to database
+  if (provider.getProviderName() === "evolution") {
+    const caption = formatBody(body || "", ticket.contact);
+    const mimeType = media.mimetype || lookup(media.path) || "";
+    const typeMessage = mimeType.split("/")[0];
+    
+    // Determine media type
+    let mediaType = "document";
+    if (typeMessage === "image") mediaType = "image";
+    else if (typeMessage === "video") mediaType = "video";
+    else if (typeMessage === "audio") mediaType = "audio";
+    
+    // Extract message ID from Evolution response or generate one
+    let messageId = uuidv4();
+    if (sentMessage?.key?.id) {
+      messageId = sentMessage.key.id;
+    } else if (sentMessage?.id) {
+      messageId = sentMessage.id;
+    }
+
+    // Build message body
+    const messageBody = caption || media.originalname || `[${mediaType}]`;
+
+    // Save message to database
+    await CreateMessageService({
+      messageData: {
+        id: messageId,
+        ticketId: ticket.id,
+        body: messageBody,
+        contactId: ticket.contactId,
+        fromMe: true,
+        read: true,
+        mediaType,
+        ack: 2,
+        queueId: ticket.queueId
+      },
+      companyId: ticket.companyId
+    });
+  }
 
   return sentMessage;
 };
