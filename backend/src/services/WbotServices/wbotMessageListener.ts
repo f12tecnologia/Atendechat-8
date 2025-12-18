@@ -363,8 +363,8 @@ export const getBodyMessage = (msg: proto.IWebMessageInfo): string | null => {
       editedMessage:
         msg?.message?.editedMessage?.message?.protocolMessage?.editedMessage
           ?.conversation,
-      imageMessage: msg.message?.imageMessage?.caption,
-      videoMessage: msg.message?.videoMessage?.caption,
+      imageMessage: msg.message?.imageMessage?.caption || "Foto",
+      videoMessage: msg.message?.videoMessage?.caption || "Vídeo",
       extendedTextMessage: msg.message?.extendedTextMessage?.text,
       buttonsResponseMessage:
         msg.message?.buttonsResponseMessage?.selectedButtonId,

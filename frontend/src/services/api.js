@@ -4,16 +4,11 @@ const getBaseUrl = () => {
         if (process.env.REACT_APP_BACKEND_URL) {
                 return process.env.REACT_APP_BACKEND_URL;
         }
-        // Use port 8080 for backend API
-        if (typeof window !== 'undefined' && window.location.hostname) {
-                const hostname = window.location.hostname;
-                // Check if running on Replit
-                if (hostname.includes('replit.dev') || hostname.includes('replit.app')) {
-                        return `${window.location.protocol}//${hostname}:8080`;
-                }
-                return `${window.location.protocol}//${hostname}:8080`;
+        // Use same origin - backend runs on same port as frontend
+        if (typeof window !== 'undefined' && window.location.origin) {
+                return window.location.origin;
         }
-        return 'http://localhost:8080';
+        return '';
 };
 
 const api = axios.create({
@@ -136,8 +131,8 @@ api.interceptors.response.use(
 );
 
 export const openApi = axios.create({
-	baseURL: getBaseUrl(),
-	withCredentials: false,
+        baseURL: getBaseUrl(),
+        withCredentials: false,
 });
 
 
