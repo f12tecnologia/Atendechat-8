@@ -107,34 +107,31 @@ const useAuth = () => {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    const refreshToken = localStorage.getItem("refreshToken");
-    (async () => {
-      if (token && refreshToken) {
-        try {
-          let parsedRefreshToken = refreshToken;
-          try {
-            parsedRefreshToken = JSON.parse(refreshToken);
-          } catch (e) {
-            // Already a plain string
-          }
+    const companyId = localStorage.getItem("companyId");
 
-          const { data } = await api.post("/auth/refresh_token", { refreshToken: parsedRefreshToken });
-          api.defaults.headers.Authorization = `Bearer ${data.token}`;
-          localStorage.setItem("token", data.token);
-          if (data.refreshToken) {
-            localStorage.setItem("refreshToken", data.refreshToken);
+    if (token && companyId) {
+      try {
+        const parsedToken = JSON.parse(token);
+        api.defaults.headers.Authorization = `Bearer ${parsedToken}`;
+        setIsAuth(true);
+
+        // Verificar se o token ainda é válido fazendo uma requisição simples
+        api.get("/auth/me").catch((err) => {
+          if (err?.response?.status === 401) {
+            console.error("Token expired, attempting refresh");
+            // O interceptor vai tentar renovar automaticamente
           }
-          setIsAuth(true);
-          setUser(data.user);
-        } catch (err) {
-          localStorage.removeItem("token");
-          localStorage.removeItem("refreshToken");
-          localStorage.removeItem("companyId");
-          localStorage.removeItem("userId");
-        }
+        });
+      } catch (err) {
+        console.error("No refresh token available, redirecting to login");
+        handleLogout();
       }
-      setLoading(false);
-    })();
+    } else {
+      console.log("No token or companyId found");
+      if (window.location.pathname !== "/login" && window.location.pathname !== "/signup") {
+        handleLogout();
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -160,24 +157,24 @@ const useAuth = () => {
       console.log("Login attempt for:", credentials.email);
       const { data } = await api.post("/auth/login", credentials);
       console.log("Login response:", data);
-      
+
       const { token, refreshToken, user: userData } = data;
-      
+
       // Store tokens
       localStorage.setItem("token", token);
       localStorage.setItem("refreshToken", refreshToken);
       api.defaults.headers.Authorization = `Bearer ${token}`;
-      
+
       // Ensure queues is always an array
       const userDataWithQueues = {
         ...userData,
         queues: Array.isArray(userData.queues) ? userData.queues : []
       };
-      
+
       setUser(userDataWithQueues);
       localStorage.setItem("userId", JSON.stringify(userDataWithQueues.id));
       localStorage.setItem("companyId", JSON.stringify(userDataWithQueues.companyId));
-      
+
       // Check subscription validity
       if (userData.company && userData.company.dueDate) {
         const dueDate = moment(userData.company.dueDate);
@@ -193,7 +190,7 @@ const useAuth = () => {
         }
         localStorage.setItem("cshow", JSON.stringify(userData.company.dueDate));
       }
-      
+
       setLoading(false);
       setIsAuth(true);
       history.push("/tickets");

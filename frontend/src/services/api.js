@@ -55,79 +55,44 @@ const processQueue = (error, token = null) => {
 };
 
 api.interceptors.response.use(
-        response => response,
-        async error => {
-                console.error("[API] Response error:", error.response?.data || error.message);
+        (response) => {
+    return response;
+  },
+  async (error) => {
+    const originalRequest = error.config;
 
-                const originalRequest = error.config;
+    console.log("[API] Response error:", error?.response?.data);
 
-                if (error.response?.status === 401 && !originalRequest._retry) {
-                        console.warn("[API] Unauthorized - Token may be invalid");
-                        if (isRefreshing) {
-                                return new Promise((resolve, reject) => {
-                                        failedQueue.push({ resolve, reject });
-                                })
-                                        .then(token => {
-                                                originalRequest.headers.Authorization = `Bearer ${token}`;
-                                                return api(originalRequest);
-                                        })
-                                        .catch(err => {
-                                                return Promise.reject(err);
-                                        });
-                        }
+    if (error?.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
 
-                        originalRequest._retry = true;
-                        isRefreshing = true;
-
-                        const refreshToken = localStorage.getItem("refreshToken");
-
-                        if (!refreshToken) {
-                                console.log("No refresh token available, redirecting to login");
-                                isRefreshing = false;
-                                processQueue(new Error("Session expired"), null);
-                                localStorage.clear();
-                                setTimeout(() => {
-                                        window.location.href = "/login";
-                                }, 100);
-                                return Promise.reject(error);
-                        }
-
-                        try {
-                                let parsedRefreshToken = refreshToken;
-                                try {
-                                        parsedRefreshToken = JSON.parse(refreshToken);
-                                } catch (e) {
-                                        // Already a plain string
-                                }
-
-                                const { data } = await openApi.post("/auth/refresh_token", {
-                                        refreshToken: parsedRefreshToken
-                                });
-
-                                if (data.token) {
-                                        localStorage.setItem("token", data.token);
-                                        if (data.refreshToken) {
-                                                localStorage.setItem("refreshToken", data.refreshToken);
-                                        }
-                                        api.defaults.headers.Authorization = `Bearer ${data.token}`;
-                                        originalRequest.headers.Authorization = `Bearer ${data.token}`;
-                                        processQueue(null, data.token);
-                                        return api(originalRequest);
-                                }
-                        } catch (refreshError) {
-                                console.error("Refresh token error:", refreshError);
-                                processQueue(refreshError, null);
-                                localStorage.clear();
-                                isRefreshing = false;
-                                window.location.href = "/login";
-                                return Promise.reject(refreshError);
-                        } finally {
-                                isRefreshing = false;
-                        }
-                }
-
-                return Promise.reject(error);
+      try {
+        const { data } = await api.post("/auth/refresh_token");
+        if (data && data.token) {
+          localStorage.setItem("token", JSON.stringify(data.token));
+          api.defaults.headers.Authorization = `Bearer ${data.token}`;
+          return api(originalRequest);
         }
+      } catch (err) {
+        console.log("[API] Unauthorized - Token may be invalid");
+        console.error("Error:", err);
+        localStorage.removeItem("token");
+        localStorage.removeItem("userId");
+        localStorage.removeItem("username");
+        localStorage.removeItem("profile");
+        localStorage.removeItem("companyId");
+        api.defaults.headers.Authorization = undefined;
+
+        // Só redireciona se não estiver já na página de login
+        if (window.location.pathname !== "/login") {
+          window.location.href = "/login";
+        }
+        return Promise.reject(err);
+      }
+    }
+
+    return Promise.reject(error);
+  }
 );
 
 export const openApi = axios.create({

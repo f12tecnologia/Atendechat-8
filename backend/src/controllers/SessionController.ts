@@ -75,7 +75,10 @@ export const update = async (
   return res.json({ token: newToken, refreshToken, user });
 };
 
-export const me = async (req: Request, res: Response): Promise<Response> => {
+export const me = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
   const token: string = req.cookies.jrt;
   const user = await FindUserFromToken(token);
   const { id, profile, super: superAdmin } = user;
@@ -91,11 +94,21 @@ export const remove = async (
   req: Request,
   res: Response
 ): Promise<Response> => {
-  const { id } = req.user;
-  const user = await User.findByPk(id);
-  await user.update({ online: false });
+  const { user } = req;
 
-  res.clearCookie("jrt");
+  const token = req.headers.authorization?.replace("Bearer ", "").trim();
 
-  return res.send();
+  const userId = user.id;
+
+  await User.update({ online: false }, { where: { id: userId } });
+
+  SendRefreshToken(res, "");
+
+  const io = getIO();
+  io.emit(`company-${user.companyId}-user`, {
+    action: "update",
+    user
+  });
+
+  return res.json({ message: "USER_LOGOUT" });
 };

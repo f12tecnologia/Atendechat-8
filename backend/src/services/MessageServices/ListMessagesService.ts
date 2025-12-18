@@ -26,59 +26,66 @@ const ListMessagesService = async ({
   companyId,
   queues = []
 }: Request): Promise<Response> => {
-  const ticket = await ShowTicketService(ticketId, companyId);
+  try {
+    const ticket = await ShowTicketService(ticketId, companyId);
 
-  if (!ticket) {
-    throw new AppError("ERR_NO_TICKET_FOUND", 404);
-  }
+    if (!ticket) {
+      throw new AppError("ERR_NO_TICKET_FOUND", 404);
+    }
 
-  // await setMessagesAsRead(ticket);
-  const limit = 20;
-  const offset = limit * (+pageNumber - 1);
+    // Verificar se o ticket pertence à mesma empresa
+    if (ticket.companyId !== companyId) {
+      throw new AppError("ERR_FORBIDDEN_TICKET_ACCESS", 403);
+    }
 
-  const options: FindOptions = {
-    where: {
+    const limit = 20;
+    const offset = limit * (+pageNumber - 1);
+
+    const whereConditions: any = {
       ticketId,
       companyId
-    }
-  };
-
-  if (queues.length > 0) {
-    options.where["queueId"] = {
-      [Op.or]: {
-        [Op.in]: queues,
-        [Op.eq]: null
-      }
     };
+
+    if (queues.length > 0) {
+      whereConditions.queueId = {
+        [Op.or]: {
+          [Op.in]: queues,
+          [Op.eq]: null
+        }
+      };
+    }
+
+    const { count, rows: messages } = await Message.findAndCountAll({
+      where: whereConditions,
+      limit,
+      include: [
+        "contact",
+        {
+          model: Message,
+          as: "quotedMsg",
+          include: ["contact"]
+        },
+        {
+          model: Queue,
+          as: "queue"
+        }
+      ],
+      offset,
+      order: [["createdAt", "DESC"]]
+    });
+
+    const hasMore = count > offset + messages.length;
+
+    return {
+      messages: messages.reverse(),
+      ticket,
+      count,
+      hasMore
+    };
+  } catch (error) {
+    console.error("Error in ListMessagesService:", error);
+    throw error;
   }
-
-  const { count, rows: messages } = await Message.findAndCountAll({
-    ...options,
-    limit,
-    include: [
-      "contact",
-      {
-        model: Message,
-        as: "quotedMsg",
-        include: ["contact"]
-      },
-      {
-        model: Queue,
-        as: "queue"
-      }
-    ],
-    offset,
-    order: [["createdAt", "DESC"]]
-  });
-
-  const hasMore = count > offset + messages.length;
-
-  return {
-    messages: messages.reverse(),
-    ticket,
-    count,
-    hasMore
-  };
 };
 
 export default ListMessagesService;
