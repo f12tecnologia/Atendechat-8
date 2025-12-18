@@ -10,8 +10,9 @@ import {
 } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
-import { AdapterDateFnsBase as AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFnsBase';
-import brLocale from 'date-fns/locale/pt-BR';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import dayjs from 'dayjs';
+import 'dayjs/locale/pt-br';
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { Button, Stack, TextField } from '@mui/material';
 import Typography from "@material-ui/core/Typography";
@@ -21,6 +22,8 @@ import { toast } from 'react-toastify';
 import { makeStyles } from "@material-ui/core/styles";
 import './button.css';
 import { i18n } from '../../translate/i18n';
+
+dayjs.locale('pt-br');
 
 const useStyles = makeStyles((theme) => ({
     container: {
@@ -72,8 +75,8 @@ export const options = {
 
 export const ChatsUser = () => {
     // const classes = useStyles();
-    const [initialDate, setInitialDate] = useState(new Date());
-    const [finalDate, setFinalDate] = useState(new Date());
+    const [initialDate, setInitialDate] = useState(dayjs());
+    const [finalDate, setFinalDate] = useState(dayjs());
     const [ticketsData, setTicketsData] = useState({ data: [] });
 
     const companyId = localStorage.getItem("companyId");
@@ -99,7 +102,7 @@ export const ChatsUser = () => {
     const handleGetTicketsInformation = async () => {
         try {
 
-            const { data } = await api.get(`/dashboard/ticketsUsers?initialDate=${format(initialDate, 'yyyy-MM-dd')}&finalDate=${format(finalDate, 'yyyy-MM-dd')}&companyId=${companyId}`);
+            const { data } = await api.get(`/dashboard/ticketsUsers?initialDate=${initialDate.format('YYYY-MM-DD')}&finalDate=${finalDate.format('YYYY-MM-DD')}&companyId=${companyId}`);
             setTicketsData(data);
         } catch (error) {
             toast.error(i18n.t("dashboard.toasts.userChartError"));
@@ -114,7 +117,7 @@ export const ChatsUser = () => {
 
             <Stack direction={'row'} spacing={2} alignItems={'center'} sx={{ my: 2, }} >
 
-                <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={brLocale}>
+                <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="pt-br">
                     <DatePicker
                         value={initialDate}
                         onChange={(newValue) => { setInitialDate(newValue) }}
@@ -124,7 +127,7 @@ export const ChatsUser = () => {
                     />
                 </LocalizationProvider>
 
-                <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={brLocale}>
+                <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="pt-br">
                     <DatePicker
                         value={finalDate}
                         onChange={(newValue) => { setFinalDate(newValue) }}
