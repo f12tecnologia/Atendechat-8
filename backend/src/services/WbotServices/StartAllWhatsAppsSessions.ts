@@ -3,6 +3,9 @@ import { StartWhatsAppSession } from "./StartWhatsAppSession";
 import * as Sentry from "@sentry/node";
 import { logger } from "../../utils/logger";
 
+// Baileys provider is disabled - only Evolution API is used
+const BAILEYS_DISABLED = true;
+
 export const StartAllWhatsAppsSessions = async (
   companyId: number
 ): Promise<void> => {
@@ -10,15 +13,15 @@ export const StartAllWhatsAppsSessions = async (
     const whatsapps = await ListWhatsAppsService({ companyId });
     if (whatsapps.length > 0) {
       for (const whatsapp of whatsapps) {
-        // Skip Evolution connections (managed externally)
-        if (whatsapp.provider === "evolution") {
+        // Skip Evolution connections (managed externally via Evolution API)
+        if (whatsapp.provider === "evolution" || whatsapp.apiIntegrationId) {
           logger.info(`Skipping Evolution API session: ${whatsapp.name} (managed externally)`);
           continue;
         }
         
-        // Skip connections with names starting with "Evolution" (orphaned/duplicate entries)
-        if (whatsapp.name.toLowerCase().startsWith("evolution")) {
-          logger.warn(`Skipping orphaned Evolution connection: ${whatsapp.name}`);
+        // Skip all Baileys sessions when disabled
+        if (BAILEYS_DISABLED) {
+          logger.info(`Baileys disabled - skipping session: ${whatsapp.name}`);
           continue;
         }
         

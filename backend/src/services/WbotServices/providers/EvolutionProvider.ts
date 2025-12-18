@@ -38,9 +38,9 @@ class EvolutionProvider implements WhatsAppProvider {
       await ticket.update({ lastMessage: textMessage });
 
       return response;
-    } catch (err) {
+    } catch (err: any) {
       Sentry.captureException(err);
-      console.log(err);
+      console.error("[Evolution] Error sending text:", err?.response?.data || err?.message || err);
       throw new AppError("ERR_SENDING_WAPP_MSG");
     }
   }
@@ -85,9 +85,9 @@ class EvolutionProvider implements WhatsAppProvider {
       await ticket.update({ lastMessage: caption || media.originalname });
 
       return response;
-    } catch (err) {
+    } catch (err: any) {
       Sentry.captureException(err);
-      console.log(err);
+      console.error("[Evolution] Error sending media:", err?.response?.data || err?.message || err);
       throw new AppError("ERR_SENDING_WAPP_MSG");
     }
   }
