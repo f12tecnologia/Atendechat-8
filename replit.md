@@ -40,6 +40,9 @@ Atendechat is built with a decoupled frontend and backend architecture.
 - **Environment**: Backend runs on port 8080, Frontend on port 5000. Redis on 6379.
 - **Security**: JWT for authentication. SSL enabled for external PostgreSQL connections.
 
+## Recent Changes
+- **Dec 18, 2025**: Fixed frontend build issue - updated MUI x-date-pickers imports in Dashboard components (ChartsDate.js, ChartsUser.js) to use `AdapterDateFnsBase` instead of the deprecated `AdapterDateFns` path for compatibility with @mui/x-date-pickers v6 and date-fns v2.
+
 ## External Dependencies
 - **Database**: PostgreSQL (Neon-hosted)
 - **Queue/Cache**: Redis
