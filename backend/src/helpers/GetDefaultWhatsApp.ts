@@ -1,3 +1,4 @@
+import { Op } from "sequelize";
 import AppError from "../errors/AppError";
 import Whatsapp from "../models/Whatsapp";
 import GetDefaultWhatsAppByUser from "./GetDefaultWhatsAppByUser";
@@ -6,38 +7,42 @@ const GetDefaultWhatsApp = async (
   companyId: number,
   userId?: number
 ): Promise<Whatsapp> => {
-  let connection: Whatsapp;
-
-  const defaultWhatsapp = await Whatsapp.findOne({
-    where: { isDefault: true, companyId }
-  });
-
-  if (defaultWhatsapp?.status === 'CONNECTED') {
-    connection = defaultWhatsapp;
-  } else {
-    const whatsapp = await Whatsapp.findOne({
-      where: { status: "CONNECTED", companyId }
-    });
-    connection = whatsapp;
-  }
-
   if (userId) {
     const whatsappByUser = await GetDefaultWhatsAppByUser(userId);
     if (whatsappByUser?.status === 'CONNECTED') {
-      connection = whatsappByUser;
-    } else {
-      const whatsapp = await Whatsapp.findOne({
-        where: { status: "CONNECTED", companyId }
-      });
-      connection = whatsapp;
+      return whatsappByUser;
     }
   }
 
-  if (!connection) {
-    throw new AppError(`Nenhum número de Whatsapp foi configurado para essa empresa`);
+  const defaultWhatsapp = await Whatsapp.findOne({
+    where: { isDefault: true, companyId, status: "CONNECTED" }
+  });
+
+  if (defaultWhatsapp) {
+    return defaultWhatsapp;
   }
 
-  return connection;
+  const evolutionConnection = await Whatsapp.findOne({
+    where: { 
+      status: "CONNECTED", 
+      companyId,
+      apiIntegrationId: { [Op.ne]: null }
+    }
+  });
+
+  if (evolutionConnection) {
+    return evolutionConnection;
+  }
+
+  const anyConnection = await Whatsapp.findOne({
+    where: { status: "CONNECTED", companyId }
+  });
+
+  if (anyConnection) {
+    return anyConnection;
+  }
+
+  throw new AppError(`Nenhum número de Whatsapp conectado foi encontrado para essa empresa`);
 };
 
 export default GetDefaultWhatsApp;
