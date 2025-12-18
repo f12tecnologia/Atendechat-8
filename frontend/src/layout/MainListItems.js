@@ -420,106 +420,98 @@ const MainListItems = (props) => {
                     </ListItem>
                   </List>
                 </Collapse>
-                {/* Flow builder */}
-                <ListItem
-                    button
-                    onClick={() => setOpenFlowsSubmenu((prev) => !prev)}
-                >
-                  <ListItemIcon>
-                    <AccountTree />
-                  </ListItemIcon>
-                  <ListItemText
-                      primary={i18n.t("mainDrawer.listItems.flows")}
-                  />
-                  {openCampaignSubmenu ? (
-                      <ExpandLessIcon />
-                  ) : (
-                      <ExpandMoreIcon />
-                  )}
-                </ListItem>
-
-                <Collapse
-                    style={{ paddingLeft: 15 }}
-                    in={openFlowsSubmenu}
-                    timeout="auto"
-                    unmountOnExit
-                >
-                  <List component="div" disablePadding>
-                    <ListItem
-                        onClick={() => history.push("/phrase-lists")}
-                        button
-                    >
-                      <ListItemIcon>
-                        <EventAvailableIcon />
-                      </ListItemIcon>
-                      <ListItemText primary="Campanha" />
-                    </ListItem>
-
-                    <ListItem
-                        onClick={() => history.push("/flowbuilders")}
-                        button
-                    >
-                      <ListItemIcon>
-                        <ShapeLine />
-                      </ListItemIcon>
-                      <ListItemText primary="Conversa" />
-                    </ListItem>
-                  </List>
-                </Collapse>
               </>
             )}
 
-            {user.super && (
-              <ListItemLink
-                to="/announcements"
-                primary={i18n.t("mainDrawer.listItems.annoucements")}
-                icon={<AnnouncementIcon />}
+            {/* Flow builder - moved outside showCampaigns block */}
+            <ListItem
+                button
+                onClick={() => setOpenFlowsSubmenu((prev) => !prev)}
+            >
+              <ListItemIcon>
+                <AccountTree />
+              </ListItemIcon>
+              <ListItemText
+                  primary={i18n.t("mainDrawer.listItems.flows")}
               />
-            )}
-            {showOpenAi && (
-              <ListItemLink
-                to="/prompts"
-                primary={i18n.t("mainDrawer.listItems.prompts")}
-                icon={<AllInclusive />}
-              />
-            )}
+              {openFlowsSubmenu ? (
+                  <ExpandLessIcon />
+              ) : (
+                  <ExpandMoreIcon />
+              )}
+            </ListItem>
 
-            {showIntegrations && (
-              <>
+            <Collapse
+                style={{ paddingLeft: 15 }}
+                in={openFlowsSubmenu}
+                timeout="auto"
+                unmountOnExit
+            >
+              <List component="div" disablePadding>
                 <ListItem
+                    onClick={() => history.push("/phrase-lists")}
+                    button
+                >
+                  <ListItemIcon>
+                    <EventAvailableIcon />
+                  </ListItemIcon>
+                  <ListItemText primary="Campanha" />
+                </ListItem>
+
+                <ListItem
+                    onClick={() => history.push("/flowbuilders")}
+                    button
+                >
+                  <ListItemIcon>
+                    <ShapeLine />
+                  </ListItemIcon>
+                  <ListItemText primary="Conversa" />
+                </ListItem>
+              </List>
+            </Collapse>
+
+            {/* OpenAI */}
+            <ListItemLink
+              to="/prompts"
+              primary={i18n.t("mainDrawer.listItems.prompts")}
+              icon={<AllInclusive />}
+            />
+
+            {/* Integrações */}
+            <ListItem
+              button
+              onClick={() => setOpenIntegrationsSubmenu((prev) => !prev)}
+            >
+              <ListItemIcon>
+                <DeviceHubOutlined />
+              </ListItemIcon>
+              <ListItemText primary="Integrações" />
+              {openIntegrationsSubmenu ? (
+                <ExpandLessIcon />
+              ) : (
+                <ExpandMoreIcon />
+              )}
+            </ListItem>
+            <Collapse
+              style={{ paddingLeft: 15 }}
+              in={openIntegrationsSubmenu}
+              timeout="auto"
+              unmountOnExit
+            >
+              <List component="div" disablePadding>
+                <ListItem
+                  onClick={() => history.push("/queue-integration")}
                   button
-                  onClick={() => setOpenIntegrationsSubmenu((prev) => !prev)}
                 >
                   <ListItemIcon>
                     <DeviceHubOutlined />
                   </ListItemIcon>
-                  <ListItemText primary="Integrações" />
-                  {openIntegrationsSubmenu ? (
-                    <ExpandLessIcon />
-                  ) : (
-                    <ExpandMoreIcon />
-                  )}
+                  <ListItemText primary={i18n.t("mainDrawer.listItems.queueIntegration")} />
                 </ListItem>
-                <Collapse
-                  style={{ paddingLeft: 15 }}
-                  in={openIntegrationsSubmenu}
-                  timeout="auto"
-                  unmountOnExit
-                >
-                  <List component="div" disablePadding>
-                    <ListItem
-                      onClick={() => history.push("/queue-integration")}
-                      button
-                    >
-                      <ListItemIcon>
-                        <DeviceHubOutlined />
-                      </ListItemIcon>
-                      <ListItemText primary={i18n.t("mainDrawer.listItems.queueIntegration")} />
-                    </ListItem>
-                  </List>
-                </Collapse>
-              </>
-            )}
+              </List>
+            </Collapse>
+
+            {/* Conexões */}
             <ListItemLink
               to="/connections"
               primary={i18n.t("mainDrawer.listItems.connections")}
@@ -529,30 +521,33 @@ const MainListItems = (props) => {
                 </Badge>
               }
             />
+
+            {/* Lista de arquivos */}
             <ListItemLink
               to="/files"
               primary={i18n.t("mainDrawer.listItems.files")}
               icon={<AttachFile />}
             />
+
+            {/* Filas & Chatbot */}
             <ListItemLink
               to="/queues"
               primary={i18n.t("mainDrawer.listItems.queues")}
               icon={<AccountTreeOutlinedIcon />}
             />
+
+            {/* Usuários */}
             <ListItemLink
               to="/users"
               primary={i18n.t("mainDrawer.listItems.users")}
               icon={<PeopleAltOutlinedIcon />}
             />
-            {showExternalApi && (
-              <>
-                <ListItemLink
-                  to="/messages-api"
-                  primary={i18n.t("mainDrawer.listItems.messagesAPI")}
-                  icon={<CodeRoundedIcon />}
-                />
-              </>
-            )}
+            {/* API */}
+            <ListItemLink
+              to="/messages-api"
+              primary={i18n.t("mainDrawer.listItems.messagesAPI")}
+              icon={<CodeRoundedIcon />}
+            />
             <ListItemLink
               to="/financeiro"
               primary={i18n.t("mainDrawer.listItems.financeiro")}
