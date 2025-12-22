@@ -10,8 +10,20 @@ import { logger } from "../../../utils/logger";
 
 // Função auxiliar para obter o número correto para envio via Evolution API
 // Evolution API espera número limpo (E.164) ou JID completo com @lid para LIDs
+// IMPORTANTE: LIDs são específicos da instância, então se o ticket foi recebido por
+// outra instância, o LID não vai funcionar. Nesses casos, tentar usar o número real.
 async function getReplyNumber(ticketId: number, contactNumber: string): Promise<string> {
-  // Buscar última mensagem recebida (fromMe=false) do ticket para obter o remoteJid correto
+  // PRIMEIRO: verificar se o contato tem um número real (não LID)
+  // Se sim, SEMPRE usar o número real - isso permite responder por qualquer instância
+  const contactIsLid = contactNumber.length > 15 || !contactNumber.match(/^\d{10,15}$/);
+  
+  if (!contactIsLid) {
+    // Contato tem número real, usar diretamente
+    logger.info(`[EvolutionProvider] Using real contact number: ${contactNumber}`);
+    return contactNumber;
+  }
+  
+  // Contato tem LID como número - precisamos buscar o remoteJid salvo
   const lastReceivedMessage = await Message.findOne({
     where: {
       ticketId,
@@ -23,10 +35,10 @@ async function getReplyNumber(ticketId: number, contactNumber: string): Promise<
   if (lastReceivedMessage?.remoteJid) {
     const savedJid = lastReceivedMessage.remoteJid;
     
-    // Se é um LID, precisamos enviar com o formato @lid para Evolution API
+    // Se é um LID, usar o formato completo @lid
     if (savedJid.includes("@lid")) {
       logger.info(`[EvolutionProvider] Using LID format for reply: ${savedJid}`);
-      return savedJid; // Manter formato completo @lid
+      return savedJid;
     }
     
     // Para JIDs normais (@s.whatsapp.net), extrair apenas o número
@@ -47,9 +59,8 @@ async function getReplyNumber(ticketId: number, contactNumber: string): Promise<
     return savedJid;
   }
   
-  // Fallback: usar o número do contato
-  // Isso pode falhar para LIDs se o número armazenado for o LID sem @
-  logger.info(`[EvolutionProvider] No saved remoteJid, using contact number: ${contactNumber}`);
+  // Fallback: usar o número do contato (que é LID neste ponto)
+  logger.warn(`[EvolutionProvider] No saved remoteJid, using LID contact number (may fail): ${contactNumber}`);
   return contactNumber;
 }
 

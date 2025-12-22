@@ -340,6 +340,9 @@ const ProcessEvolutionWebhookService = async (
     const isGroup = data.key.remoteJid.includes("@g.us");
     const isLid = data.key.remoteJid.includes("@lid");
     
+    // Log para debug
+    logger.info(`[WEBHOOK] Processing message - remoteJid: ${data.key.remoteJid}, remoteJidAlt: ${data.key.remoteJidAlt || 'N/A'}`);
+    
     // remoteJidAlt contém o número real quando remoteJid é um LID
     const remoteJidAlt = data.key.remoteJidAlt || "";
     
@@ -348,23 +351,30 @@ const ProcessEvolutionWebhookService = async (
     const remoteJidForReply = data.key.remoteJid;
     
     // Para o número do contato (exibição), extraímos o número real
-    // Prioridade: usar remoteJidAlt se disponível (número real do telefone)
+    // SEMPRE priorizar remoteJidAlt quando disponível (número real do telefone)
     let contactNumber: string;
+    let numberForProfilePic: string; // Número para buscar foto de perfil
+    
     if (remoteJidAlt) {
-      // Usar número real do remoteJidAlt para exibição
+      // Usar número real do remoteJidAlt para exibição e foto
       contactNumber = remoteJidAlt
         .replace("@s.whatsapp.net", "")
-        .replace("@g.us", "");
-      logger.info(`[WEBHOOK] LID detected. Using remoteJidAlt for display: ${contactNumber}, remoteJid for reply: ${remoteJidForReply}`);
+        .replace("@g.us", "")
+        .replace("@lid", "");
+      numberForProfilePic = contactNumber;
+      logger.info(`[WEBHOOK] Using remoteJidAlt for contact: ${contactNumber}, remoteJid for reply: ${remoteJidForReply}`);
     } else if (isLid) {
-      // LID sem remoteJidAlt - usar LID como número (não ideal, mas funciona para reply)
+      // LID sem remoteJidAlt - precisamos buscar o número real
+      // Por enquanto, usar o LID mas marcar que não temos o número real
       contactNumber = data.key.remoteJid.replace("@lid", "");
-      logger.warn(`[WEBHOOK] LID without remoteJidAlt: ${data.key.remoteJid}. Display may show LID instead of real number.`);
+      numberForProfilePic = contactNumber; // Pode não funcionar para foto
+      logger.warn(`[WEBHOOK] LID without remoteJidAlt: ${data.key.remoteJid}. Contact may show LID instead of real number.`);
     } else {
       // Número normal (@s.whatsapp.net)
       contactNumber = data.key.remoteJid
         .replace("@s.whatsapp.net", "")
         .replace("@g.us", "");
+      numberForProfilePic = contactNumber;
     }
     
     // Buscar foto de perfil (apenas para contatos individuais, não grupos)
@@ -372,25 +382,29 @@ const ProcessEvolutionWebhookService = async (
     // Usar instanceName da integração ou o instance do webhook como fallback
     const instanceNameToUse = apiIntegration.instanceName || instance;
     
-    if (!isGroup && contactNumber && instanceNameToUse) {
+    if (!isGroup && numberForProfilePic && instanceNameToUse) {
       try {
         const evolutionService = new EvolutionApiService({
           baseUrl: apiIntegration.baseUrl,
           apiKey: apiIntegration.apiKey
         });
         
+        logger.info(`[WEBHOOK] Fetching profile picture for ${numberForProfilePic} via instance ${instanceNameToUse}`);
+        
         const fetchedProfilePic = await evolutionService.getProfilePicture(
           instanceNameToUse,
-          contactNumber
+          numberForProfilePic
         );
         
         profilePicUrl = fetchedProfilePic || "";
         
         if (profilePicUrl) {
-          logger.info(`[WEBHOOK] Profile picture fetched for ${contactNumber}: ${profilePicUrl.substring(0, 50)}...`);
+          logger.info(`[WEBHOOK] Profile picture fetched: ${profilePicUrl.substring(0, 80)}...`);
+        } else {
+          logger.info(`[WEBHOOK] No profile picture available for ${numberForProfilePic}`);
         }
       } catch (error) {
-        logger.warn(`[WEBHOOK] Failed to fetch profile picture for ${contactNumber}: ${error.message}`);
+        logger.warn(`[WEBHOOK] Failed to fetch profile picture for ${numberForProfilePic}: ${error.message}`);
         profilePicUrl = "";
       }
     }
