@@ -1,11 +1,57 @@
 import * as Sentry from "@sentry/node";
 import fs from "fs";
 import ApiIntegration from "../../../models/ApiIntegration";
+import Message from "../../../models/Message";
 import formatBody from "../../../helpers/Mustache";
 import AppError from "../../../errors/AppError";
 import { WhatsAppProvider, SendTextOptions, SendMediaOptions } from "./WhatsAppProvider";
 import EvolutionApiService from "../../EvolutionApiService/EvolutionApiService";
 import { logger } from "../../../utils/logger";
+
+// Função auxiliar para obter o número correto para envio via Evolution API
+// Evolution API espera número limpo (E.164) ou JID completo com @lid para LIDs
+async function getReplyNumber(ticketId: number, contactNumber: string): Promise<string> {
+  // Buscar última mensagem recebida (fromMe=false) do ticket para obter o remoteJid correto
+  const lastReceivedMessage = await Message.findOne({
+    where: {
+      ticketId,
+      fromMe: false
+    },
+    order: [["createdAt", "DESC"]]
+  });
+  
+  if (lastReceivedMessage?.remoteJid) {
+    const savedJid = lastReceivedMessage.remoteJid;
+    
+    // Se é um LID, precisamos enviar com o formato @lid para Evolution API
+    if (savedJid.includes("@lid")) {
+      logger.info(`[EvolutionProvider] Using LID format for reply: ${savedJid}`);
+      return savedJid; // Manter formato completo @lid
+    }
+    
+    // Para JIDs normais (@s.whatsapp.net), extrair apenas o número
+    if (savedJid.includes("@s.whatsapp.net")) {
+      const cleanNumber = savedJid.replace("@s.whatsapp.net", "");
+      logger.info(`[EvolutionProvider] Using phone number from saved JID: ${cleanNumber}`);
+      return cleanNumber;
+    }
+    
+    // Para grupos (@g.us), usar o ID do grupo
+    if (savedJid.includes("@g.us")) {
+      logger.info(`[EvolutionProvider] Using group ID: ${savedJid}`);
+      return savedJid;
+    }
+    
+    // Se não tem @, é provavelmente um número limpo
+    logger.info(`[EvolutionProvider] Using saved number directly: ${savedJid}`);
+    return savedJid;
+  }
+  
+  // Fallback: usar o número do contato
+  // Isso pode falhar para LIDs se o número armazenado for o LID sem @
+  logger.info(`[EvolutionProvider] No saved remoteJid, using contact number: ${contactNumber}`);
+  return contactNumber;
+}
 
 class EvolutionProvider implements WhatsAppProvider {
   getProviderName(): string {
@@ -42,13 +88,16 @@ class EvolutionProvider implements WhatsAppProvider {
         apiKey: apiIntegration.apiKey
       });
 
-      const number = ticket.contact.number;
+      // Obter o número correto para responder (pode ser LID ou número normal)
+      const replyNumber = await getReplyNumber(ticket.id, ticket.contact.number);
       const textMessage = formatBody(body, ticket.contact);
+
+      logger.info(`[EvolutionProvider] Sending to: ${replyNumber}`);
 
       // Enviar mensagem via Evolution API
       const response = await evolutionService.sendTextMessage({
         instanceName,
-        number,
+        number: replyNumber,
         text: textMessage
       });
 
@@ -97,8 +146,11 @@ class EvolutionProvider implements WhatsAppProvider {
         apiKey: apiIntegration.apiKey
       });
 
-      const number = ticket.contact.number;
+      // Obter o número correto para responder (pode ser LID ou número normal)
+      const replyNumber = await getReplyNumber(ticket.id, ticket.contact.number);
       const caption = formatBody(body || "", ticket.contact);
+
+      logger.info(`[EvolutionProvider] Sending media to: ${replyNumber}`);
 
       // Ler arquivo e converter para base64
       const fileBuffer = fs.readFileSync(media.path);
@@ -114,7 +166,7 @@ class EvolutionProvider implements WhatsAppProvider {
       // Enviar mídia via Evolution API
       const response = await evolutionService.sendMediaMessage({
         instanceName,
-        number,
+        number: replyNumber,
         mediatype,
         media: base64Data,
         caption

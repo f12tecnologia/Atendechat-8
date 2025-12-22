@@ -115,6 +115,7 @@ interface EvolutionWebhookData {
     messages?: Array<{
       key: {
         remoteJid: string;
+        remoteJidAlt?: string; // Número real quando remoteJid é um LID (Linked ID)
         fromMe: boolean;
         id: string;
       };
@@ -126,6 +127,7 @@ interface EvolutionWebhookData {
     // Campos diretos (compatibilidade Baileys)
     key?: {
       remoteJid: string;
+      remoteJidAlt?: string; // Número real quando remoteJid é um LID (Linked ID)
       fromMe: boolean;
       id: string;
     };
@@ -334,12 +336,36 @@ const ProcessEvolutionWebhookService = async (
       return;
     }
 
-    // Extrair número do contato (remover @s.whatsapp.net e @lid)
+    // Extrair número do contato
     const isGroup = data.key.remoteJid.includes("@g.us");
-    const contactNumber = data.key.remoteJid
-      .replace("@s.whatsapp.net", "")
-      .replace("@lid", "")
-      .replace("@g.us", "");
+    const isLid = data.key.remoteJid.includes("@lid");
+    
+    // remoteJidAlt contém o número real quando remoteJid é um LID
+    const remoteJidAlt = data.key.remoteJidAlt || "";
+    
+    // Para responder, precisamos do JID original (com @lid se for LID)
+    // Isso é CRÍTICO: Evolution API precisa do @lid para responder a dispositivos vinculados
+    const remoteJidForReply = data.key.remoteJid;
+    
+    // Para o número do contato (exibição), extraímos o número real
+    // Prioridade: usar remoteJidAlt se disponível (número real do telefone)
+    let contactNumber: string;
+    if (remoteJidAlt) {
+      // Usar número real do remoteJidAlt para exibição
+      contactNumber = remoteJidAlt
+        .replace("@s.whatsapp.net", "")
+        .replace("@g.us", "");
+      logger.info(`[WEBHOOK] LID detected. Using remoteJidAlt for display: ${contactNumber}, remoteJid for reply: ${remoteJidForReply}`);
+    } else if (isLid) {
+      // LID sem remoteJidAlt - usar LID como número (não ideal, mas funciona para reply)
+      contactNumber = data.key.remoteJid.replace("@lid", "");
+      logger.warn(`[WEBHOOK] LID without remoteJidAlt: ${data.key.remoteJid}. Display may show LID instead of real number.`);
+    } else {
+      // Número normal (@s.whatsapp.net)
+      contactNumber = data.key.remoteJid
+        .replace("@s.whatsapp.net", "")
+        .replace("@g.us", "");
+    }
     
     // Buscar foto de perfil (apenas para contatos individuais, não grupos)
     let profilePicUrl = "";
@@ -516,6 +542,7 @@ const ProcessEvolutionWebhookService = async (
     }
 
     // Criar mensagem
+    // Salvar o remoteJidForReply para usar ao responder (pode ser remoteJidAlt ou remoteJid original)
     const messageData = {
       id: data.key.id,
       ticketId: ticket.id,
@@ -527,7 +554,7 @@ const ProcessEvolutionWebhookService = async (
       read: false,
       quotedMsgId: null,
       ack: 1,
-      remoteJid: data.key.remoteJid,
+      remoteJid: remoteJidForReply, // Usar o JID correto para responder
       participant: null,
       dataJson: JSON.stringify(data),
       ticketTrakingId: null
