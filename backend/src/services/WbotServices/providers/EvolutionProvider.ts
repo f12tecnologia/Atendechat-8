@@ -5,6 +5,7 @@ import formatBody from "../../../helpers/Mustache";
 import AppError from "../../../errors/AppError";
 import { WhatsAppProvider, SendTextOptions, SendMediaOptions } from "./WhatsAppProvider";
 import EvolutionApiService from "../../EvolutionApiService/EvolutionApiService";
+import { logger } from "../../../utils/logger";
 
 class EvolutionProvider implements WhatsAppProvider {
   getProviderName(): string {
@@ -17,8 +18,24 @@ class EvolutionProvider implements WhatsAppProvider {
       const apiIntegration = await ApiIntegration.findByPk(ticket.whatsapp.apiIntegrationId);
 
       if (!apiIntegration) {
+        logger.error("[EvolutionProvider] No API integration found for apiIntegrationId:", ticket.whatsapp.apiIntegrationId);
         throw new AppError("ERR_NO_EVOLUTION_INTEGRATION");
       }
+
+      // Usar instanceName da integração, ou fallback para o nome da conexão
+      const instanceName = (apiIntegration.instanceName || ticket.whatsapp?.name || "").trim();
+      
+      if (!instanceName) {
+        logger.error("[EvolutionProvider] No instance name available. Integration:", {
+          id: apiIntegration.id,
+          name: apiIntegration.name,
+          instanceName: apiIntegration.instanceName,
+          whatsappName: ticket.whatsapp?.name
+        });
+        throw new AppError("ERR_NO_INSTANCE_NAME");
+      }
+
+      logger.info(`[EvolutionProvider] Sending text message via instance: ${instanceName}`);
 
       const evolutionService = new EvolutionApiService({
         baseUrl: apiIntegration.baseUrl,
@@ -30,7 +47,7 @@ class EvolutionProvider implements WhatsAppProvider {
 
       // Enviar mensagem via Evolution API
       const response = await evolutionService.sendTextMessage({
-        instanceName: apiIntegration.instanceName,
+        instanceName,
         number,
         text: textMessage
       });
@@ -40,7 +57,12 @@ class EvolutionProvider implements WhatsAppProvider {
       return response;
     } catch (err: any) {
       Sentry.captureException(err);
-      console.error("[Evolution] Error sending text:", err?.response?.data || err?.message || err);
+      logger.error("[EvolutionProvider] Error sending text:", {
+        error: err?.response?.data || err?.message,
+        status: err?.response?.status,
+        ticketId: ticket?.id,
+        contactNumber: ticket?.contact?.number
+      });
       throw new AppError("ERR_SENDING_WAPP_MSG");
     }
   }
@@ -51,8 +73,24 @@ class EvolutionProvider implements WhatsAppProvider {
       const apiIntegration = await ApiIntegration.findByPk(ticket.whatsapp.apiIntegrationId);
 
       if (!apiIntegration) {
+        logger.error("[EvolutionProvider] No API integration found for apiIntegrationId:", ticket.whatsapp.apiIntegrationId);
         throw new AppError("ERR_NO_EVOLUTION_INTEGRATION");
       }
+
+      // Usar instanceName da integração, ou fallback para o nome da conexão
+      const instanceName = (apiIntegration.instanceName || ticket.whatsapp?.name || "").trim();
+      
+      if (!instanceName) {
+        logger.error("[EvolutionProvider] No instance name available for media. Integration:", {
+          id: apiIntegration.id,
+          name: apiIntegration.name,
+          instanceName: apiIntegration.instanceName,
+          whatsappName: ticket.whatsapp?.name
+        });
+        throw new AppError("ERR_NO_INSTANCE_NAME");
+      }
+
+      logger.info(`[EvolutionProvider] Sending media message via instance: ${instanceName}`);
 
       const evolutionService = new EvolutionApiService({
         baseUrl: apiIntegration.baseUrl,
@@ -75,7 +113,7 @@ class EvolutionProvider implements WhatsAppProvider {
 
       // Enviar mídia via Evolution API
       const response = await evolutionService.sendMediaMessage({
-        instanceName: apiIntegration.instanceName,
+        instanceName,
         number,
         mediatype,
         media: base64Data,
@@ -87,7 +125,12 @@ class EvolutionProvider implements WhatsAppProvider {
       return response;
     } catch (err: any) {
       Sentry.captureException(err);
-      console.error("[Evolution] Error sending media:", err?.response?.data || err?.message || err);
+      logger.error("[EvolutionProvider] Error sending media:", {
+        error: err?.response?.data || err?.message,
+        status: err?.response?.status,
+        ticketId: ticket?.id,
+        contactNumber: ticket?.contact?.number
+      });
       throw new AppError("ERR_SENDING_WAPP_MSG");
     }
   }

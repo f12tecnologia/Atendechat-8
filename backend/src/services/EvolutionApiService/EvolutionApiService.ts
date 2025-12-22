@@ -194,6 +194,8 @@ class EvolutionApiService {
 
   async sendTextMessage(data: SendTextMessageRequest): Promise<any> {
     try {
+      logger.info(`Evolution API - Sending text to ${data.number} via instance ${data.instanceName}`);
+      
       const response = await this.client.post(
         `/message/sendText/${data.instanceName}`,
         {
@@ -205,8 +207,16 @@ class EvolutionApiService {
         `Evolution API - Text message sent to ${data.number} via ${data.instanceName}`
       );
       return response.data;
-    } catch (error) {
-      logger.error("Evolution API - Error sending text message:", error);
+    } catch (error: any) {
+      const errorDetails = {
+        status: error?.response?.status,
+        statusText: error?.response?.statusText,
+        data: error?.response?.data,
+        message: error?.message,
+        instanceName: data.instanceName,
+        number: data.number
+      };
+      logger.error("Evolution API - Error sending text message:", errorDetails);
       throw new AppError("ERR_EVOLUTION_API_SEND_TEXT");
     }
   }
