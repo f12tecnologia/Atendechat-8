@@ -261,6 +261,33 @@ class EvolutionApiService {
     }
   }
 
+  async getBase64FromMediaMessage(instanceName: string, messageId: string, convertToMp4: boolean = false): Promise<string | null> {
+    try {
+      const response = await this.client.post(
+        `/chat/getBase64FromMediaMessage/${instanceName}`,
+        {
+          message: {
+            key: {
+              id: messageId
+            }
+          },
+          convertToMp4
+        }
+      );
+      
+      const base64Data = response.data?.base64 || null;
+      
+      if (base64Data) {
+        logger.info(`Evolution API - Base64 media fetched for message ${messageId}`);
+      }
+      
+      return base64Data;
+    } catch (error: any) {
+      logger.warn(`Evolution API - Error fetching base64 for message ${messageId}:`, error.message);
+      return null;
+    }
+  }
+
   static async getInstanceFromIntegration(
     integrationId: number,
     companyId: number

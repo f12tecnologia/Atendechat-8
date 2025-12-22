@@ -1,3 +1,6 @@
+import fs from "fs";
+import path from "path";
+import axios from "axios";
 import Message from "../../models/Message";
 import Whatsapp from "../../models/Whatsapp";
 import Queue from "../../models/Queue";
@@ -8,6 +11,99 @@ import CreateMessageService from "../MessageServices/CreateMessageService";
 import { getIO } from "../../libs/socket";
 import { logger } from "../../utils/logger";
 import EvolutionApiService from "./EvolutionApiService";
+
+const publicFolder = path.resolve(__dirname, "..", "..", "..", "public");
+
+// Função auxiliar para processar e salvar mídia recebida
+const processMediaMessage = async (
+  messageContent: any,
+  messageId: string,
+  fileName: string,
+  instanceName: string,
+  apiIntegration: any
+): Promise<string> => {
+  try {
+    if (!messageContent) {
+      logger.warn(`[MEDIA] No message content provided`);
+      return "";
+    }
+
+    let base64Data: string | null = null;
+    
+    // Opção 1: base64 já está no webhook
+    if (messageContent.base64) {
+      base64Data = messageContent.base64;
+      // Remover prefixo data URI se presente
+      if (base64Data.includes(",")) {
+        base64Data = base64Data.split(",")[1];
+      }
+      logger.info(`[MEDIA] Using base64 from webhook`);
+    }
+    // Opção 2: Baixar da mediaUrl se disponível
+    else if (messageContent.mediaUrl) {
+      try {
+        const response = await axios.get(messageContent.mediaUrl, {
+          responseType: "arraybuffer",
+          timeout: 30000
+        });
+        base64Data = Buffer.from(response.data).toString("base64");
+        logger.info(`[MEDIA] Downloaded from mediaUrl`);
+      } catch (downloadErr: any) {
+        logger.warn(`[MEDIA] Failed to download from mediaUrl: ${downloadErr.message}`);
+      }
+    }
+    // Opção 3: Buscar via API getBase64FromMediaMessage
+    else if (instanceName && messageId) {
+      try {
+        const evolutionService = new EvolutionApiService({
+          baseUrl: apiIntegration.baseUrl,
+          apiKey: apiIntegration.apiKey
+        });
+        
+        const fetchedBase64 = await evolutionService.getBase64FromMediaMessage(
+          instanceName,
+          messageId,
+          false
+        );
+        
+        if (fetchedBase64) {
+          base64Data = fetchedBase64;
+          // Remover prefixo data URI se presente
+          if (base64Data.includes(",")) {
+            base64Data = base64Data.split(",")[1];
+          }
+          logger.info(`[MEDIA] Fetched base64 via API`);
+        }
+      } catch (apiErr: any) {
+        logger.warn(`[MEDIA] Failed to fetch base64 via API: ${apiErr.message}`);
+      }
+    }
+
+    if (!base64Data) {
+      logger.warn(`[MEDIA] Could not retrieve media data`);
+      return "";
+    }
+
+    // Garantir que a pasta public existe
+    if (!fs.existsSync(publicFolder)) {
+      fs.mkdirSync(publicFolder, { recursive: true });
+    }
+
+    // Salvar arquivo de forma assíncrona
+    const filePath = path.join(publicFolder, fileName);
+    const buffer = Buffer.from(base64Data, "base64");
+    
+    await fs.promises.writeFile(filePath, buffer);
+
+    logger.info(`[MEDIA] Saved media to ${fileName} (${buffer.length} bytes)`);
+    
+    // Retornar nome do arquivo (o frontend acessa via /public/filename)
+    return fileName;
+  } catch (error) {
+    logger.error(`[MEDIA] Error processing media: ${error}`);
+    return "";
+  }
+};
 
 interface EvolutionWebhookData {
   event: string;
@@ -247,7 +343,10 @@ const ProcessEvolutionWebhookService = async (
     
     // Buscar foto de perfil (apenas para contatos individuais, não grupos)
     let profilePicUrl = "";
-    if (!isGroup && contactNumber && apiIntegration.instanceName) {
+    // Usar instanceName da integração ou o instance do webhook como fallback
+    const instanceNameToUse = apiIntegration.instanceName || instance;
+    
+    if (!isGroup && contactNumber && instanceNameToUse) {
       try {
         const evolutionService = new EvolutionApiService({
           baseUrl: apiIntegration.baseUrl,
@@ -255,11 +354,15 @@ const ProcessEvolutionWebhookService = async (
         });
         
         const fetchedProfilePic = await evolutionService.getProfilePicture(
-          apiIntegration.instanceName,
+          instanceNameToUse,
           contactNumber
         );
         
         profilePicUrl = fetchedProfilePic || "";
+        
+        if (profilePicUrl) {
+          logger.info(`[WEBHOOK] Profile picture fetched for ${contactNumber}: ${profilePicUrl.substring(0, 50)}...`);
+        }
       } catch (error) {
         logger.warn(`[WEBHOOK] Failed to fetch profile picture for ${contactNumber}: ${error.message}`);
         profilePicUrl = "";
@@ -318,10 +421,12 @@ const ProcessEvolutionWebhookService = async (
       undefined
     );
 
-    // Extrair corpo da mensagem
+    // Extrair corpo da mensagem e processar mídia
     let body = "";
     let mediaType = "chat";
     let mediaUrl = "";
+    let fileName = "";
+    let mimetype = "";
 
     if (data.message) {
       if (data.message.conversation) {
@@ -329,25 +434,84 @@ const ProcessEvolutionWebhookService = async (
       } else if (data.message.extendedTextMessage) {
         body = data.message.extendedTextMessage.text;
       } else if (data.message.imageMessage) {
-        body = data.message.imageMessage.caption || "";
+        body = data.message.imageMessage.caption || "[imagem]";
         mediaType = "image";
-        mediaUrl = data.message.imageMessage.url || "";
+        mimetype = data.message.imageMessage.mimetype || "image/jpeg";
+        // Usar messageId + timestamp para evitar colisões
+        fileName = `${data.key.id}_${Date.now()}.${mimetype.split("/")[1] || "jpg"}`;
+        
+        // Processar mídia: base64, mediaUrl ou buscar via API
+        const savedPath = await processMediaMessage(
+          data.message.imageMessage,
+          data.key.id,
+          fileName,
+          instanceNameToUse,
+          apiIntegration
+        );
+        if (savedPath) mediaUrl = savedPath;
+        
       } else if (data.message.videoMessage) {
-        body = data.message.videoMessage.caption || "";
+        body = data.message.videoMessage.caption || "[vídeo]";
         mediaType = "video";
-        mediaUrl = data.message.videoMessage.url || "";
+        mimetype = data.message.videoMessage.mimetype || "video/mp4";
+        fileName = `${data.key.id}_${Date.now()}.${mimetype.split("/")[1] || "mp4"}`;
+        
+        const savedPath = await processMediaMessage(
+          data.message.videoMessage,
+          data.key.id,
+          fileName,
+          instanceNameToUse,
+          apiIntegration
+        );
+        if (savedPath) mediaUrl = savedPath;
+        
       } else if (data.message.audioMessage) {
-        body = "";
+        body = "[áudio]";
         mediaType = "audio";
-        mediaUrl = data.message.audioMessage.url || "";
+        mimetype = data.message.audioMessage.mimetype || "audio/ogg";
+        const ext = data.message.audioMessage.ptt ? "ogg" : (mimetype.split("/")[1] || "ogg");
+        fileName = `${data.key.id}_${Date.now()}.${ext}`;
+        
+        const savedPath = await processMediaMessage(
+          data.message.audioMessage,
+          data.key.id,
+          fileName,
+          instanceNameToUse,
+          apiIntegration
+        );
+        if (savedPath) mediaUrl = savedPath;
+        
       } else if (data.message.documentMessage) {
-        body = data.message.documentMessage.caption || data.message.documentMessage.fileName || "";
+        body = data.message.documentMessage.caption || data.message.documentMessage.fileName || "[documento]";
         mediaType = "document";
-        mediaUrl = data.message.documentMessage.url || "";
+        mimetype = data.message.documentMessage.mimetype || "application/octet-stream";
+        // Para documentos, usar o nome original ou gerar um único
+        const originalName = data.message.documentMessage.fileName || "";
+        fileName = originalName ? `${data.key.id}_${originalName}` : `${data.key.id}_${Date.now()}.pdf`;
+        
+        const savedPath = await processMediaMessage(
+          data.message.documentMessage,
+          data.key.id,
+          fileName,
+          instanceNameToUse,
+          apiIntegration
+        );
+        if (savedPath) mediaUrl = savedPath;
+        
       } else if (data.message.stickerMessage) {
-        body = "";
+        body = "[sticker]";
         mediaType = "sticker";
-        mediaUrl = data.message.stickerMessage.url || "";
+        mimetype = data.message.stickerMessage.mimetype || "image/webp";
+        fileName = `${data.key.id}_${Date.now()}.webp`;
+        
+        const savedPath = await processMediaMessage(
+          data.message.stickerMessage,
+          data.key.id,
+          fileName,
+          instanceNameToUse,
+          apiIntegration
+        );
+        if (savedPath) mediaUrl = savedPath;
       }
     }
 
@@ -372,7 +536,7 @@ const ProcessEvolutionWebhookService = async (
     // CreateMessageService já emite os eventos Socket.IO necessários
     await CreateMessageService({ messageData, companyId });
 
-    logger.info(`Evolution API message processed: ${data.key.id}`);
+    logger.info(`Evolution API message processed: ${data.key.id}, mediaType=${mediaType}, mediaUrl=${mediaUrl ? 'saved' : 'none'}`);
   } catch (error) {
     logger.error(`Error processing Evolution API webhook: ${error}`);
     throw error;
