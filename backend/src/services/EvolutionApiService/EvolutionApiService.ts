@@ -76,14 +76,13 @@ class EvolutionApiService {
           enabled: true,
           url: data.webhookUrl,
           webhookByEvents: false,
-          webhookBase64: false,
+          webhookBase64: true,
           events: data.webhookEvents || [
             "QRCODE_UPDATED",
-            "MESSAGES_UPSERT",
+            "CONNECTION_UPDATE",
             "MESSAGES_UPDATE",
-            "MESSAGES_DELETE",
-            "SEND_MESSAGE",
-            "CONNECTION_UPDATE"
+            "MESSAGES_UPSERT",
+            "SEND_MESSAGE"
           ]
         };
       }
