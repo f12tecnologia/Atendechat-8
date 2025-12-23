@@ -54,9 +54,12 @@ app.use("/public", express.static(uploadConfig.directory));
 
 // Serve frontend build if it exists
 const frontendBuildPath = path.join(__dirname, "..", "..", "frontend", "build");
+logger.info("Checking frontend build path: " + frontendBuildPath);
 if (fs.existsSync(frontendBuildPath)) {
   logger.info("Serving frontend from: " + frontendBuildPath);
   app.use(express.static(frontendBuildPath));
+} else {
+  logger.warn("Frontend build not found at: " + frontendBuildPath);
 }
 
 // Health check route
