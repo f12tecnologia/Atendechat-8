@@ -208,15 +208,9 @@ class EvolutionApiService {
       );
       return response.data;
     } catch (error: any) {
-      const errorDetails = {
-        status: error?.response?.status,
-        statusText: error?.response?.statusText,
-        data: error?.response?.data,
-        message: error?.message,
-        instanceName: data.instanceName,
-        number: data.number
-      };
-      logger.error("Evolution API - Error sending text message:", JSON.stringify(errorDetails, null, 2));
+      logger.error(`Evolution API - Error sending text message: status=${error?.response?.status}, statusText=${error?.response?.statusText}, message=${error?.message}`);
+      logger.error(`Evolution API - Error data: ${JSON.stringify(error?.response?.data || {})}`);
+      logger.error(`Evolution API - Request: instanceName=${data.instanceName}, number=${data.number}`);
       throw new AppError("ERR_EVOLUTION_API_SEND_TEXT");
     }
   }
