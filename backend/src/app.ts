@@ -28,18 +28,28 @@ app.set("queues", {
 const bodyparser = require('body-parser');
 app.use(bodyParser.json({ limit: '10mb' }));
 
-// Simple CORS configuration - allow all origins in development
+// CORS configuration - allow all origins
 app.use(
   cors({
     credentials: true,
-    origin: true, // Allow all origins
+    origin: function (origin, callback) {
+      // Allow all origins
+      callback(null, true);
+    },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept']
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+    exposedHeaders: ['Content-Range', 'X-Content-Range']
   })
 );
 app.use(cookieParser());
 app.use(express.json());
 app.use(Sentry.Handlers.requestHandler());
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', message: 'Server is running' });
+});
+
 app.use("/public", express.static(uploadConfig.directory));
 
 // Serve frontend build if it exists
