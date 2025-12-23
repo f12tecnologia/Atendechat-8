@@ -76,7 +76,13 @@ class EvolutionProvider implements WhatsAppProvider {
 
       if (!apiIntegration) {
         logger.error("[EvolutionProvider] No API integration found for apiIntegrationId:", ticket.whatsapp.apiIntegrationId);
-        throw new AppError("ERR_NO_EVOLUTION_INTEGRATION");
+        throw new AppError("Integração Evolution API não encontrada. Configure nas Integrações.");
+      }
+
+      // Validar API Key
+      if (!apiIntegration.apiKey || apiIntegration.apiKey.trim() === "") {
+        logger.error("[EvolutionProvider] API Key missing for integration:", apiIntegration.id);
+        throw new AppError("API Key não configurada para esta integração Evolution. Verifique as configurações.");
       }
 
       // Usar instanceName da integração, ou fallback para o nome da conexão
@@ -89,7 +95,13 @@ class EvolutionProvider implements WhatsAppProvider {
           instanceName: apiIntegration.instanceName,
           whatsappName: ticket.whatsapp?.name
         });
-        throw new AppError("ERR_NO_INSTANCE_NAME");
+        throw new AppError("Nome da instância não configurado. Verifique as configurações da conexão.");
+      }
+
+      // Verificar status da conexão
+      if (ticket.whatsapp.status !== "CONNECTED") {
+        logger.warn(`[EvolutionProvider] Trying to send message but connection is ${ticket.whatsapp.status}`);
+        throw new AppError(`WhatsApp desconectado (${ticket.whatsapp.status}). Reconecte a instância ${instanceName}.`);
       }
 
       logger.info(`[EvolutionProvider] Sending text message via instance: ${instanceName}`);

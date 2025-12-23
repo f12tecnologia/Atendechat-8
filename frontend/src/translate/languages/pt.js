@@ -1671,6 +1671,8 @@ const messages = {
         ERR_SENDING_WAPP_MSG:
             "Erro ao enviar mensagem do WhatsApp. Verifique a página de conexões.",
         ERR_DELETE_WAPP_MSG: "Não foi possível excluir a mensagem do WhatsApp.",
+        ERR_NO_EVOLUTION_INTEGRATION: "Integração Evolution API não encontrada. Configure nas Integrações.",
+        ERR_NO_INSTANCE_NAME: "Nome da instância não configurado. Verifique as configurações.",
         ERR_OTHER_OPEN_TICKET: "Já existe um tíquete aberto para este contato.",
         ERR_SESSION_EXPIRED: "Sessão expirada. Por favor entre.",
         ERR_USER_CREATION_DISABLED:

@@ -35,14 +35,14 @@ class EvolutionApiService {
 
   constructor(config: EvolutionApiConfig) {
     this.apiKey = config.apiKey;
-    
+
     // Auto-fix URL if missing protocol
     let baseUrl = config.baseUrl.trim();
     if (!baseUrl.startsWith("http://") && !baseUrl.startsWith("https://")) {
       baseUrl = `https://${baseUrl}`;
       logger.info(`Evolution API - Auto-fixed URL to: ${baseUrl}`);
     }
-    
+
     this.client = axios.create({
       baseURL: baseUrl,
       headers: {
@@ -100,7 +100,7 @@ class EvolutionApiService {
         error: error.response?.data || error.message,
         stack: error.stack
       });
-      
+
       if (statusCode === 401) {
         throw new AppError("ERR_EVOLUTION_API_UNAUTHORIZED", 401);
       }
@@ -192,26 +192,47 @@ class EvolutionApiService {
     }
   }
 
-  async sendTextMessage(data: SendTextMessageRequest): Promise<any> {
+  async sendTextMessage({
+    instanceName,
+    number,
+    text
+  }: SendTextMessageRequest): Promise<any> {
     try {
-      logger.info(`Evolution API - Sending text to ${data.number} via instance ${data.instanceName}`);
-      
+      logger.info(`Evolution API - Sending text to ${number} via instance ${instanceName}`);
+
+      // Validar API Key antes de enviar
+      if (!this.apiKey || this.apiKey.trim() === "") {
+        throw new Error("API Key não configurada para Evolution API");
+      }
+
       const response = await this.client.post(
-        `/message/sendText/${data.instanceName}`,
+        `/message/sendText/${instanceName}`,
         {
-          number: data.number,
-          text: data.text
+          number,
+          text
         }
       );
-      logger.info(
-        `Evolution API - Text message sent to ${data.number} via ${data.instanceName}`
-      );
+
       return response.data;
     } catch (error: any) {
-      logger.error(`Evolution API - Error sending text message: status=${error?.response?.status}, statusText=${error?.response?.statusText}, message=${error?.message}`);
-      logger.error(`Evolution API - Error data: ${JSON.stringify(error?.response?.data || {})}`);
-      logger.error(`Evolution API - Request: instanceName=${data.instanceName}, number=${data.number}`);
-      throw new AppError("ERR_EVOLUTION_API_SEND_TEXT");
+      const status = error?.response?.status;
+      const errorData = error?.response?.data;
+
+      logger.error("Evolution API - Error sending text message:", {
+        status,
+        statusText: error?.response?.statusText,
+        message: error?.message,
+        instanceName,
+        hasApiKey: !!this.apiKey
+      });
+      logger.error("Evolution API - Error data:", errorData);
+
+      // Se for erro 401, lançar mensagem clara
+      if (status === 401) {
+        throw new Error(`Erro de autenticação na Evolution API. Verifique a API Key da instância ${instanceName}`);
+      }
+
+      throw error;
     }
   }
 
@@ -245,22 +266,22 @@ class EvolutionApiService {
           number: contactNumber
         }
       );
-      
+
       const profileUrl = response.data?.profilePictureUrl || response.data?.url || null;
-      
+
       if (profileUrl) {
         logger.info(`Evolution API - Profile picture fetched for ${contactNumber}: ${profileUrl.substring(0, 60)}...`);
       } else {
         logger.info(`Evolution API - No profile picture available for ${contactNumber}`);
       }
-      
+
       return profileUrl;
     } catch (error: any) {
       if (error.response?.status === 404 || error.response?.status === 400) {
         logger.info(`Evolution API - No profile picture found for ${contactNumber}`);
         return null;
       }
-      
+
       logger.warn(`Evolution API - Error fetching profile picture for ${contactNumber}: ${error.message}`);
       return null;
     }
@@ -279,13 +300,13 @@ class EvolutionApiService {
           convertToMp4
         }
       );
-      
+
       const base64Data = response.data?.base64 || null;
-      
+
       if (base64Data) {
         logger.info(`Evolution API - Base64 media fetched for message ${messageId}`);
       }
-      
+
       return base64Data;
     } catch (error: any) {
       logger.warn(`Evolution API - Error fetching base64 for message ${messageId}:`, error.message);
