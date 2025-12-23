@@ -80,7 +80,7 @@ const UpdateTicketService = async ({
     });
 
     if (isNil(whatsappId)) {
-      whatsappId = ticket.whatsappId.toString();
+      whatsappId = ticket.whatsappId ? ticket.whatsappId.toString() : null;
     }
 
     await SetTicketMessagesAsRead(ticket);
@@ -89,7 +89,11 @@ const UpdateTicketService = async ({
     const oldUserId = ticket.user?.id;
     const oldQueueId = ticket.queueId;
 
-    if (oldStatus === "closed" || Number(whatsappId) !== ticket.whatsappId) {
+    // Só verificar tickets abertos se temos um whatsappId válido
+    const hasValidWhatsappId = whatsappId !== null && whatsappId !== undefined;
+    const whatsappIdChanged = hasValidWhatsappId && Number(whatsappId) !== ticket.whatsappId;
+    
+    if (oldStatus === "closed" || whatsappIdChanged) {
       // let otherTicket = await Ticket.findOne({
       //   where: {
       //     contactId: ticket.contactId,
@@ -109,7 +113,9 @@ const UpdateTicketService = async ({
 
       //     return { ticket: otherTicket, oldStatus, oldUserId }
       // }
-      await CheckContactOpenTickets(ticket.contact.id, whatsappId);
+      if (hasValidWhatsappId) {
+        await CheckContactOpenTickets(ticket.contact.id, whatsappId);
+      }
       chatbot = null;
       queueOptionId = null;
     }
