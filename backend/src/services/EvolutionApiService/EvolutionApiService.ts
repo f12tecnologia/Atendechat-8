@@ -216,7 +216,7 @@ class EvolutionApiService {
         instanceName: data.instanceName,
         number: data.number
       };
-      logger.error("Evolution API - Error sending text message:", errorDetails);
+      logger.error("Evolution API - Error sending text message:", JSON.stringify(errorDetails, null, 2));
       throw new AppError("ERR_EVOLUTION_API_SEND_TEXT");
     }
   }
