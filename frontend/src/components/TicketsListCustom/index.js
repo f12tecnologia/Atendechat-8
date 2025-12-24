@@ -188,7 +188,7 @@ const TicketsListCustom = (props) => {
   });
 
   useEffect(() => {
-    const queueIds = queues.map((q) => q.id);
+    const queueIds = (queues || []).map((q) => q.id);
     const filteredTickets = tickets.filter(
       (t) => queueIds.indexOf(t.queueId) > -1
     );
@@ -245,7 +245,7 @@ const TicketsListCustom = (props) => {
     });
 
     socket.on(`company-${companyId}-appMessage`, (data) => {
-      const queueIds = queues.map((q) => q.id);
+      const queueIds = (queues || []).map((q) => q.id);
       if (
         profile === "user" &&
         (queueIds.indexOf(data.ticket?.queue?.id) === -1 ||
