@@ -33,7 +33,7 @@ const ShowTicketService = async (
       {
         model: Whatsapp,
         as: "whatsapp",
-        attributes: ["name"]
+        attributes: ["id", "name", "provider", "apiIntegrationId"]
       },
       {
         model: Tag,
