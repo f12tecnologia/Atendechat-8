@@ -61,32 +61,32 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // Evitar loop infinito: não tentar refresh em rotas de auth
-    if (originalRequest.url?.includes('/auth/')) {
-      return Promise.reject(error);
-    }
-
-    if (error?.response?.status === 401) {
-      // Se já tentou fazer refresh
-      if (originalRequest._retry) {
-        console.log("Refresh failed, redirecting to login");
+    // Evitar loop infinito: não tentar refresh em rotas de auth ou se já tentou
+    if (originalRequest.url?.includes('/auth/') || originalRequest._retry) {
+      if (error?.response?.status === 401) {
         localStorage.removeItem("token");
         localStorage.removeItem("companyId");
         localStorage.removeItem("userId");
-        window.location.href = "/login";
-        return Promise.reject(error);
+        if (window.location.pathname !== "/login") {
+          window.location.href = "/login";
+        }
       }
+      return Promise.reject(error);
+    }
 
+    if (error?.response?.status === 401 && !isRefreshing) {
+      isRefreshing = true;
       originalRequest._retry = true;
 
       try {
-        console.log("Attempting token refresh...");
         const { data } = await api.post("/auth/refresh_token");
         
         if (data && data.token) {
-          const newToken = typeof data.token === 'string' ? data.token : JSON.stringify(data.token);
           localStorage.setItem("token", JSON.stringify(data.token));
           api.defaults.headers.Authorization = `Bearer ${data.token}`;
+          
+          processQueue(null, data.token);
+          isRefreshing = false;
           
           // Retry original request com novo token
           originalRequest.headers.Authorization = `Bearer ${data.token}`;
@@ -95,13 +95,30 @@ api.interceptors.response.use(
           throw new Error("Invalid refresh response");
         }
       } catch (refreshError) {
-        console.error("Token refresh failed:", refreshError);
+        processQueue(refreshError, null);
+        isRefreshing = false;
+        
         localStorage.removeItem("token");
         localStorage.removeItem("companyId");
         localStorage.removeItem("userId");
-        window.location.href = "/login";
+        
+        if (window.location.pathname !== "/login") {
+          window.location.href = "/login";
+        }
         return Promise.reject(refreshError);
       }
+    } else if (error?.response?.status === 401 && isRefreshing) {
+      // Se já está fazendo refresh, coloca na fila
+      return new Promise((resolve, reject) => {
+        failedQueue.push({ resolve, reject });
+      })
+        .then(token => {
+          originalRequest.headers.Authorization = `Bearer ${token}`;
+          return api(originalRequest);
+        })
+        .catch(err => {
+          return Promise.reject(err);
+        });
     }
     
     return Promise.reject(error);
