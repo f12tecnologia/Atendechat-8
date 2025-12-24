@@ -99,10 +99,10 @@ class EvolutionProvider implements WhatsAppProvider {
         throw new AppError("Nome da instância não configurado. Verifique as configurações da conexão.");
       }
 
-      // Verificar status da conexão
-      if (ticket.whatsapp.status !== "CONNECTED") {
-        logger.warn(`[EvolutionProvider] Trying to send message but connection is ${ticket.whatsapp.status}`);
-        throw new AppError(`WhatsApp desconectado (${ticket.whatsapp.status}). Reconecte a instância ${instanceName}.`);
+      // Verificar status da conexão (apenas log de aviso, não bloquear - sessão pode estar gerenciada externamente)
+      const connectionStatus = ticket.whatsapp?.status;
+      if (connectionStatus && connectionStatus !== "CONNECTED") {
+        logger.warn(`[EvolutionProvider] Connection status is ${connectionStatus}, attempting to send anyway (may be managed externally)`);
       }
 
       logger.info(`[EvolutionProvider] Sending text message via instance: ${instanceName}`);
