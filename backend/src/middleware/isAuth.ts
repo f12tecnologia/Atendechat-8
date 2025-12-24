@@ -55,7 +55,14 @@ const isAuth = async (req: Request, res: Response, next: NextFunction): Promise<
 
   } catch (err) {
     console.error("Token verification error:", err.message);
-    throw new AppError("Invalid token. We'll try to assign a new one on next request", 403 );
+    
+    // Se o token expirou, retorna 401 para tentar refresh
+    if (err.name === 'TokenExpiredError') {
+      throw new AppError("ERR_SESSION_EXPIRED", 401);
+    }
+    
+    // Para outros erros de token, retorna 403
+    throw new AppError("Invalid token", 403);
   }
 
   return next();

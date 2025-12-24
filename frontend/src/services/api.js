@@ -61,9 +61,15 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
+    // Evitar loop infinito: não tentar refresh em rotas de auth
+    if (originalRequest.url?.includes('/auth/')) {
+      return Promise.reject(error);
+    }
+
     if (error?.response?.status === 401) {
-      // Se já tentou fazer refresh ou se o erro é de sessão expirada
-      if (originalRequest._retry || error?.response?.data?.error === "ERR_SESSION_EXPIRED") {
+      // Se já tentou fazer refresh
+      if (originalRequest._retry) {
+        console.log("Refresh failed, redirecting to login");
         localStorage.removeItem("token");
         localStorage.removeItem("companyId");
         localStorage.removeItem("userId");
@@ -74,13 +80,22 @@ api.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
+        console.log("Attempting token refresh...");
         const { data } = await api.post("/auth/refresh_token");
-        if (data) {
+        
+        if (data && data.token) {
+          const newToken = typeof data.token === 'string' ? data.token : JSON.stringify(data.token);
           localStorage.setItem("token", JSON.stringify(data.token));
           api.defaults.headers.Authorization = `Bearer ${data.token}`;
+          
+          // Retry original request com novo token
+          originalRequest.headers.Authorization = `Bearer ${data.token}`;
           return api(originalRequest);
+        } else {
+          throw new Error("Invalid refresh response");
         }
       } catch (refreshError) {
+        console.error("Token refresh failed:", refreshError);
         localStorage.removeItem("token");
         localStorage.removeItem("companyId");
         localStorage.removeItem("userId");
@@ -88,6 +103,7 @@ api.interceptors.response.use(
         return Promise.reject(refreshError);
       }
     }
+    
     return Promise.reject(error);
   }
 );

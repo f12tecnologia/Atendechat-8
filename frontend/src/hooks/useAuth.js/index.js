@@ -15,93 +15,7 @@ const useAuth = () => {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState({});
 
-  // Token interceptor is already handled in api.js
-
-  let isRefreshing = false;
-  let failedRequestsQueue = [];
-
-  api.interceptors.response.use(
-    (response) => {
-      return response;
-    },
-    async (error) => {
-      const originalRequest = error.config;
-
-      if (error?.response?.status === 403 && !originalRequest._retry) {
-        if (isRefreshing) {
-          return new Promise((resolve, reject) => {
-            failedRequestsQueue.push({ resolve, reject });
-          })
-            .then((token) => {
-              originalRequest.headers.Authorization = `Bearer ${token}`;
-              return api(originalRequest);
-            })
-            .catch((err) => {
-              return Promise.reject(err);
-            });
-        }
-
-        originalRequest._retry = true;
-        isRefreshing = true;
-
-        try {
-          let storedRefreshToken = localStorage.getItem("refreshToken");
-          try {
-            storedRefreshToken = JSON.parse(storedRefreshToken);
-          } catch (e) {
-            // Already a plain string
-          }
-
-          const { data } = await api.post("/auth/refresh_token", { refreshToken: storedRefreshToken });
-
-          if (data) {
-            localStorage.setItem("token", data.token);
-            if (data.refreshToken) {
-              localStorage.setItem("refreshToken", data.refreshToken);
-            }
-            api.defaults.headers.Authorization = `Bearer ${data.token}`;
-
-            failedRequestsQueue.forEach((request) => {
-              request.resolve(data.token);
-            });
-            failedRequestsQueue = [];
-          }
-
-          return api(originalRequest);
-        } catch (refreshError) {
-          failedRequestsQueue.forEach((request) => {
-            request.reject(refreshError);
-          });
-          failedRequestsQueue = [];
-
-          localStorage.removeItem("token");
-          localStorage.removeItem("refreshToken");
-          localStorage.removeItem("companyId");
-          localStorage.removeItem("userId");
-          api.defaults.headers.Authorization = undefined;
-          setIsAuth(false);
-
-          return Promise.reject(refreshError);
-        } finally {
-          isRefreshing = false;
-        }
-      }
-
-      if (
-        error?.response?.status === 401 ||
-        (error?.response?.status === 403 && originalRequest._retry)
-      ) {
-        localStorage.removeItem("token");
-        localStorage.removeItem("refreshToken");
-        localStorage.removeItem("companyId");
-        localStorage.removeItem("userId");
-        api.defaults.headers.Authorization = undefined;
-        setIsAuth(false);
-      }
-
-      return Promise.reject(error);
-    }
-  );
+  // Token interceptor is already handled in api.js - removed duplicate interceptor
 
   const socketManager = useContext(SocketContext);
 
@@ -111,23 +25,35 @@ const useAuth = () => {
 
     if (token && companyId) {
       try {
-        const parsedToken = JSON.parse(token);
+        let parsedToken = token;
+        try {
+          parsedToken = JSON.parse(token);
+        } catch (e) {
+          // Token já é string
+        }
+        
         api.defaults.headers.Authorization = `Bearer ${parsedToken}`;
         setIsAuth(true);
+        setLoading(false);
 
-        // Verificar se o token ainda é válido fazendo uma requisição simples
-        api.get("/auth/me").catch((err) => {
-          if (err?.response?.status === 401) {
-            console.error("Token expired, attempting refresh");
+        // Verificar se o token ainda é válido
+        api.get("/auth/me")
+          .then(({ data }) => {
+            setUser(data);
+            setIsAuth(true);
+          })
+          .catch((err) => {
+            console.error("Auth check failed:", err);
             // O interceptor vai tentar renovar automaticamente
-          }
-        });
+            // Se falhar, vai redirecionar para login
+          });
       } catch (err) {
-        console.error("No refresh token available, redirecting to login");
+        console.error("Token validation failed:", err);
         handleLogout();
       }
     } else {
       console.log("No token or companyId found");
+      setLoading(false);
       if (window.location.pathname !== "/login" && window.location.pathname !== "/signup") {
         handleLogout();
       }
