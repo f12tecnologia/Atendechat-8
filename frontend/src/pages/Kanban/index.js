@@ -54,7 +54,7 @@ const Kanban = () => {
   const [tickets, setTickets] = useState([]);
   const { user } = useContext(AuthContext);
   const { profile, queues } = user;
-  const jsonString = user.queues.map((queue) => queue.UserQueue.queueId);
+  const jsonString = (user.queues || []).map((queue) => queue.UserQueue.queueId);
 
   const fetchTickets = async (jsonString) => {
     try {
@@ -74,7 +74,7 @@ const Kanban = () => {
 
   const popularCards = (jsonString) => {
     const filteredTickets = tickets.filter(
-      (ticket) => ticket.tags.length === 0
+      (ticket) => (ticket.tags || []).length === 0
     );
 
     const lanes = [
@@ -107,9 +107,9 @@ const Kanban = () => {
           href: "/tickets/" + ticket.uuid,
         })),
       },
-      ...tags.map((tag) => {
+      ...(tags || []).map((tag) => {
         const tagsTickets = tickets.filter((ticket) => {
-          const tagIds = ticket.tags.map((tag) => tag.id);
+          const tagIds = (ticket.tags || []).map((tag) => tag.id);
           return tagIds.includes(tag.id);
         });
 

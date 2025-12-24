@@ -12,8 +12,10 @@ import { SocketContext, SocketManager } from './context/Socket/SocketContext';
 import Routes from "./routes";
 
 const queryClient = new QueryClient();
+const APP_BUILD_VERSION = "v2.0.1_20251224"; // Fixed undefined arrays causing blank screen
 
 const App = () => {
+    console.log("Atendechat build:", APP_BUILD_VERSION);
     const [locale, setLocale] = useState();
 
     const prefersDarkMode = useMediaQuery("(prefers-color-scheme: dark)");
