@@ -55,42 +55,39 @@ const processQueue = (error, token = null) => {
 };
 
 api.interceptors.response.use(
-        (response) => {
+  (response) => {
     return response;
   },
   async (error) => {
     const originalRequest = error.config;
 
-    console.log("[API] Response error:", error?.response?.data);
+    if (error?.response?.status === 401) {
+      // Se já tentou fazer refresh ou se o erro é de sessão expirada
+      if (originalRequest._retry || error?.response?.data?.error === "ERR_SESSION_EXPIRED") {
+        localStorage.removeItem("token");
+        localStorage.removeItem("companyId");
+        localStorage.removeItem("userId");
+        window.location.href = "/login";
+        return Promise.reject(error);
+      }
 
-    if (error?.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
       try {
         const { data } = await api.post("/auth/refresh_token");
-        if (data && data.token) {
+        if (data) {
           localStorage.setItem("token", JSON.stringify(data.token));
           api.defaults.headers.Authorization = `Bearer ${data.token}`;
           return api(originalRequest);
         }
-      } catch (err) {
-        console.log("[API] Unauthorized - Token may be invalid");
-        console.error("Error:", err);
+      } catch (refreshError) {
         localStorage.removeItem("token");
-        localStorage.removeItem("userId");
-        localStorage.removeItem("username");
-        localStorage.removeItem("profile");
         localStorage.removeItem("companyId");
-        api.defaults.headers.Authorization = undefined;
-
-        // Só redireciona se não estiver já na página de login
-        if (window.location.pathname !== "/login") {
-          window.location.href = "/login";
-        }
-        return Promise.reject(err);
+        localStorage.removeItem("userId");
+        window.location.href = "/login";
+        return Promise.reject(refreshError);
       }
     }
-
     return Promise.reject(error);
   }
 );

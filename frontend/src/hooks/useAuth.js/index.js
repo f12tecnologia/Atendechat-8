@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect, useContext, useCallback } from "react";
 import { useHistory } from "react-router-dom";
 import { has, isArray } from "lodash";
 
@@ -151,55 +151,34 @@ const useAuth = () => {
     }
   }, [socketManager, user]);
 
-  const handleLogin = async (credentials) => {
-    setLoading(true);
-    try {
-      console.log("Login attempt for:", credentials.email);
-      const { data } = await api.post("/auth/login", credentials);
-      console.log("Login response:", data);
+  const handleLogin = useCallback(async (userData) => {
+        setLoading(true);
 
-      const { token, refreshToken, user: userData } = data;
+        try {
+            const { data } = await api.post("/auth/login", userData);
+            const {
+                user,
+                token,
+            } = data;
 
-      // Store tokens
-      localStorage.setItem("token", token);
-      localStorage.setItem("refreshToken", refreshToken);
-      api.defaults.headers.Authorization = `Bearer ${token}`;
+            localStorage.setItem("token", JSON.stringify(token));
+            localStorage.setItem("companyId", user.companyId);
+            localStorage.setItem("userId", user.id);
 
-      // Ensure queues is always an array
-      const userDataWithQueues = {
-        ...userData,
-        queues: Array.isArray(userData.queues) ? userData.queues : []
-      };
+            // Garantir que o token está no formato correto
+            const authToken = token.replace(/^"(.*)"$/, '$1');
+            api.defaults.headers.Authorization = `Bearer ${authToken}`;
 
-      setUser(userDataWithQueues);
-      localStorage.setItem("userId", JSON.stringify(userDataWithQueues.id));
-      localStorage.setItem("companyId", JSON.stringify(userDataWithQueues.companyId));
-
-      // Check subscription validity
-      if (userData.company && userData.company.dueDate) {
-        const dueDate = moment(userData.company.dueDate);
-        const now = moment();
-        if (dueDate.isBefore(now)) {
-          toast.error(i18n.t("auth.toasts.expiredSubscription"));
-          localStorage.removeItem("token");
-          localStorage.removeItem("refreshToken");
-          localStorage.removeItem("companyId");
-          localStorage.removeItem("userId");
-          setLoading(false);
-          return;
+            setUser(data.user);
+            setLoading(false);
+            setIsAuth(true);
+            toast.success(i18n.t("auth.toasts.success"));
+            history.push("/tickets");
+        } catch (err) {
+            toastError(err);
+            setLoading(false);
         }
-        localStorage.setItem("cshow", JSON.stringify(userData.company.dueDate));
-      }
-
-      setLoading(false);
-      setIsAuth(true);
-      history.push("/tickets");
-    } catch (err) {
-      console.error("Login error:", err);
-      toastError(err);
-      setLoading(false);
-    }
-  };
+    }, [history]);
 
   const handleLogout = async () => {
     setLoading(true);

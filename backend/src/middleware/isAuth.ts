@@ -24,6 +24,10 @@ const isAuth = async (req: Request, res: Response, next: NextFunction): Promise<
 
   const [, token] = authHeader.split(" ");
 
+  if (!token) {
+    throw new AppError("ERR_SESSION_EXPIRED", 401);
+  }
+
   try {
     const decoded = verify(token, authConfig.secret);
     const { id, profile, companyId } = decoded as TokenPayload;
@@ -50,6 +54,7 @@ const isAuth = async (req: Request, res: Response, next: NextFunction): Promise<
     }
 
   } catch (err) {
+    console.error("Token verification error:", err.message);
     throw new AppError("Invalid token. We'll try to assign a new one on next request", 403 );
   }
 
