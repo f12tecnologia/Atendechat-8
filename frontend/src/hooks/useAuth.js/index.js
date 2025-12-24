@@ -9,6 +9,7 @@ import api from "../../services/api";
 import toastError from "../../errors/toastError";
 import { SocketContext } from "../../context/Socket/SocketContext";
 import moment from "moment";
+
 const useAuth = () => {
   const history = useHistory();
   const [isAuth, setIsAuth] = useState(false);
@@ -31,7 +32,7 @@ const useAuth = () => {
         } catch (e) {
           // Token já é string
         }
-        
+
         api.defaults.headers.Authorization = `Bearer ${parsedToken}`;
         setIsAuth(true);
         setLoading(false);

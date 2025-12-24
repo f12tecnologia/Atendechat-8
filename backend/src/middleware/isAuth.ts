@@ -1,10 +1,8 @@
 import { verify } from "jsonwebtoken";
 import { Request, Response, NextFunction } from "express";
-import { logger } from "../utils/logger";
+
 import AppError from "../errors/AppError";
 import authConfig from "../config/auth";
-import Company from "../models/Company";
-import moment from "moment";
 
 interface TokenPayload {
   id: string;
@@ -15,57 +13,33 @@ interface TokenPayload {
   exp: number;
 }
 
-const isAuth = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+const isAuth = (req: Request, res: Response, next: NextFunction): void => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader) {
-    throw new AppError("ERR_SESSION_EXPIRED", 401);
+    return res.status(401).json({ error: "ERR_SESSION_EXPIRED" });
   }
 
   const [, token] = authHeader.split(" ");
 
   if (!token) {
-    throw new AppError("ERR_SESSION_EXPIRED", 401);
+    return res.status(401).json({ error: "ERR_SESSION_EXPIRED" });
   }
 
   try {
     const decoded = verify(token, authConfig.secret);
     const { id, profile, companyId } = decoded as TokenPayload;
 
-    const user = { id, profile, companyId };
-    req.user = user;
+    req.user = {
+      id,
+      profile,
+      companyId
+    };
 
-    const company = await Company.findByPk(companyId);
-
-    if (!company) {
-      throw new AppError("Company not found", 404);
-    }
-
-    if (company.dueDate) {
-      const dueDate = moment(company.dueDate, "YYYY-MM-DD");
-      const today = moment().format("YYYY-MM-DD");
-
-      if (dueDate.isBefore(today)) {
-        throw new AppError(
-          `Opss! Sua assinatura venceu em ${dueDate.format("DD/MM/YYYY")}.\nEntre em contato com o Suporte para mais informações!`,
-          401
-        );
-      }
-    }
-
+    return next();
   } catch (err) {
-    console.error("Token verification error:", err.message);
-    
-    // Se o token expirou, retorna 401 para tentar refresh
-    if (err.name === 'TokenExpiredError') {
-      throw new AppError("ERR_SESSION_EXPIRED", 401);
-    }
-    
-    // Para outros erros de token, retorna 403
-    throw new AppError("Invalid token", 403);
+    return res.status(401).json({ error: "ERR_SESSION_EXPIRED" });
   }
-
-  return next();
 };
 
 export default isAuth;
