@@ -95,7 +95,7 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
   const [prompts, setPrompts] = useState([]);
   const [integrations, setIntegrations] = useState([]);
   const [selectedIntegration, setSelectedIntegration] = useState(null);
-  const [provider, setProvider] = useState("baileys");
+  const [provider, setProvider] = useState("evolution");
   const [evolutionIntegrations, setEvolutionIntegrations] = useState([]);
   const [selectedEvolutionIntegration, setSelectedEvolutionIntegration] = useState(null);
   const [qrCode, setQrCode] = useState(null);
@@ -215,33 +215,27 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
         toast.success(i18n.t("whatsappModal.success"));
         handleClose();
       } else {
-        // Creating new connection
-        if (provider === "evolution") {
-          if (!selectedEvolutionIntegration) {
-            toast.error("Selecione uma integração Evolution API antes de continuar");
-            return;
-          }
-          const evolutionData = {
-            ...whatsappData,
-            apiIntegrationId: selectedEvolutionIntegration
-          };
-          const { data } = await api.post("/whatsapp/evolution", evolutionData);
-          
-          // Store the created WhatsApp ID to track connection status
-          if (data.whatsapp && data.whatsapp.id) {
-            setCreatedWhatsAppId(data.whatsapp.id);
-            createdWhatsAppIdRef.current = data.whatsapp.id;
-          }
-          
-          if (data.qrcode) {
-            setQrCode(data.qrcode);
-          }
-          toast.success("Conexão Evolution API criada! Escaneie o QR Code.");
-        } else {
-          await api.post("/whatsapp", whatsappData);
-          toast.success(i18n.t("whatsappModal.success"));
-          handleClose();
+        // Creating new connection - only Evolution API is supported
+        if (!selectedEvolutionIntegration) {
+          toast.error("Selecione uma integração Evolution API antes de continuar");
+          return;
         }
+        const evolutionData = {
+          ...whatsappData,
+          apiIntegrationId: selectedEvolutionIntegration
+        };
+        const { data } = await api.post("/whatsapp/evolution", evolutionData);
+        
+        // Store the created WhatsApp ID to track connection status
+        if (data.whatsapp && data.whatsapp.id) {
+          setCreatedWhatsAppId(data.whatsapp.id);
+          createdWhatsAppIdRef.current = data.whatsapp.id;
+        }
+        
+        if (data.qrcode) {
+          setQrCode(data.qrcode);
+        }
+        toast.success("Conexão Evolution API criada! Escaneie o QR Code.");
       }
     } catch (err) {
       toastError(err);
@@ -266,7 +260,7 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
     setQrCode(null);
     setCreatedWhatsAppId(null);
     createdWhatsAppIdRef.current = null;
-    setProvider("baileys");
+    setProvider("evolution");
     setSelectedEvolutionIntegration(null);
     onClose();
     setWhatsApp(initialState);
@@ -344,53 +338,39 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                 
                 {!whatsAppId && (
                   <>
-                    <FormControl margin="dense" variant="outlined" fullWidth>
-                      <InputLabel>Tipo de Conexão</InputLabel>
-                      <Select
-                        value={provider}
-                        onChange={(e) => setProvider(e.target.value)}
-                        label="Tipo de Conexão"
-                      >
-                        <MenuItem value="baileys">WhatsApp (Baileys)</MenuItem>
-                        <MenuItem value="evolution">Evolution API</MenuItem>
-                      </Select>
-                    </FormControl>
-
-                    {provider === "evolution" && (
-                      <Grid container spacing={1} alignItems="flex-start">
-                        <Grid item xs={11}>
-                          <FormControl margin="dense" variant="outlined" fullWidth>
-                            <InputLabel>Integração Evolution API</InputLabel>
-                            <Select
-                              value={selectedEvolutionIntegration || ""}
-                              onChange={(e) => setSelectedEvolutionIntegration(e.target.value)}
-                              label="Integração Evolution API"
-                            >
-                              {evolutionIntegrations.map((integration) => (
-                                <MenuItem key={integration.id} value={integration.id}>
-                                  {integration.name}
-                                </MenuItem>
-                              ))}
-                            </Select>
-                            {evolutionIntegrations.length === 0 && (
-                              <FormHelperText>
-                                Nenhuma integração Evolution API encontrada. Clique no botão "+" para criar uma.
-                              </FormHelperText>
-                            )}
-                          </FormControl>
-                        </Grid>
-                        <Grid item xs={1}>
-                          <IconButton
-                            color="primary"
-                            onClick={handleOpenIntegrationModal}
-                            style={{ marginTop: "12px" }}
-                            title="Criar nova integração Evolution API"
+                    <Grid container spacing={1} alignItems="flex-start">
+                      <Grid item xs={11}>
+                        <FormControl margin="dense" variant="outlined" fullWidth>
+                          <InputLabel>Integração Evolution API</InputLabel>
+                          <Select
+                            value={selectedEvolutionIntegration || ""}
+                            onChange={(e) => setSelectedEvolutionIntegration(e.target.value)}
+                            label="Integração Evolution API"
                           >
-                            <AddIcon />
-                          </IconButton>
-                        </Grid>
+                            {evolutionIntegrations.map((integration) => (
+                              <MenuItem key={integration.id} value={integration.id}>
+                                {integration.name}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                          {evolutionIntegrations.length === 0 && (
+                            <FormHelperText>
+                              Nenhuma integração Evolution API encontrada. Clique no botão "+" para criar uma.
+                            </FormHelperText>
+                          )}
+                        </FormControl>
                       </Grid>
-                    )}
+                      <Grid item xs={1}>
+                        <IconButton
+                          color="primary"
+                          onClick={handleOpenIntegrationModal}
+                          style={{ marginTop: "12px" }}
+                          title="Criar nova integração Evolution API"
+                        >
+                          <AddIcon />
+                        </IconButton>
+                      </Grid>
+                    </Grid>
 
                     {qrCode && (
                       <div style={{ textAlign: "center", margin: "20px 0" }}>
