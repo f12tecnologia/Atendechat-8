@@ -149,14 +149,15 @@ const SocketManager = {
       }
 
       this.currentSocket = openSocket(process.env.REACT_APP_BACKEND_URL, {
-        transports: ["polling"],
-        pingTimeout: 18000,
-        pingInterval: 18000,
+        transports: ["websocket", "polling"],
+        pingTimeout: 30000,
+        pingInterval: 25000,
         query: { token },
         reconnection: true,
-        reconnectionAttempts: 5,
-        reconnectionDelay: 1000,
-        reconnectionDelayMax: 5000,
+        reconnectionAttempts: 10,
+        reconnectionDelay: 500,
+        reconnectionDelayMax: 3000,
+        upgrade: true,
       });
 
       this.currentSocket.on("disconnect", (reason) => {
