@@ -72,6 +72,10 @@ class EvolutionProvider implements WhatsAppProvider {
 
   async sendText({ body, ticket, quotedMsg }: SendTextOptions): Promise<any> {
     try {
+      // Log detalhado para debug
+      logger.info(`[EvolutionProvider] sendText called for ticket ${ticket.id}`);
+      logger.info(`[EvolutionProvider] Ticket whatsapp details: id=${ticket.whatsapp?.id}, name=${ticket.whatsapp?.name}, apiIntegrationId=${ticket.whatsapp?.apiIntegrationId}`);
+      
       // Buscar integração Evolution API
       const apiIntegration = await ApiIntegration.findByPk(ticket.whatsapp.apiIntegrationId);
 
@@ -79,6 +83,9 @@ class EvolutionProvider implements WhatsAppProvider {
         logger.error("[EvolutionProvider] No API integration found for apiIntegrationId:", ticket.whatsapp.apiIntegrationId);
         throw new AppError("Integração Evolution API não encontrada. Configure nas Integrações.");
       }
+      
+      // Log dos dados da integração encontrada
+      logger.info(`[EvolutionProvider] Found ApiIntegration: id=${apiIntegration.id}, name=${apiIntegration.name}, instanceName=${apiIntegration.instanceName}, baseUrl=${apiIntegration.baseUrl}`);
 
       // Validar API Key
       if (!apiIntegration.apiKey || apiIntegration.apiKey.trim() === "") {
