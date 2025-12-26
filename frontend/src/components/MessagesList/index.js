@@ -338,10 +338,13 @@ const MessagesList = ({ ticket, ticketId, isGroup }) => {
   }, [ticketId]);
 
   useEffect(() => {
+    if (ticketId === undefined) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     const delayDebounceFn = setTimeout(() => {
       const fetchMessages = async () => {
-        if (ticketId === undefined) return;
         try {
           const { data } = await api.get("/messages/" + ticketId, {
             params: { pageNumber },
@@ -461,7 +464,7 @@ const MessagesList = ({ ticket, ticketId, isGroup }) => {
     /*else if (message.mediaType === "multi_vcard") {
       console.log("multi_vcard")
       console.log(message)
-    	
+        
       if(message.body !== null && message.body !== "") {
         let newBody = JSON.parse(message.body)
         return (
@@ -751,7 +754,7 @@ const MessagesList = ({ ticket, ticketId, isGroup }) => {
                   {message.quotedMsg && renderQuotedMessage(message)}
                   <MarkdownWrapper>{message.mediaType === "locationMessage" ? null : message.body}</MarkdownWrapper>
                   <span className={classes.timestamp}>
-				    {message.isEdited && <span>Editada </span>}
+                                    {message.isEdited && <span>Editada </span>}
                     {format(parseISO(message.createdAt), "HH:mm")}
                   </span>
                 </div>
@@ -781,7 +784,7 @@ const MessagesList = ({ ticket, ticketId, isGroup }) => {
                 <div
                   className={clsx(classes.textContentItem, {
                     [classes.textContentItemDeleted]: message.isDeleted,
-					[classes.textContentItemEdited]: message.isEdited,
+                                        [classes.textContentItemEdited]: message.isEdited,
                   })}
                 >
                   {message.isDeleted && (
@@ -794,7 +797,7 @@ const MessagesList = ({ ticket, ticketId, isGroup }) => {
                   {message.quotedMsg && renderQuotedMessage(message)}
                   <MarkdownWrapper>{message.mediaType === "locationMessage" ? null : message.body}</MarkdownWrapper>
                   <span className={classes.timestamp}>
-				    {message.isEdited && <span>{i18n.t("messagesList.edited")}</span>}
+                                    {message.isEdited && <span>{i18n.t("messagesList.edited")}</span>}
                     {format(parseISO(message.createdAt), "HH:mm")}
                     {renderMessageAck(message)}
                   </span>
