@@ -226,12 +226,17 @@ class EvolutionApiService {
       });
       logger.error("Evolution API - Error data:", errorData);
 
-      // Se for erro 401, lançar mensagem clara
-      if (status === 401) {
-        throw new Error(`Erro de autenticação na Evolution API. Verifique a API Key da instância ${instanceName}`);
+      // Se for erro 404, a instância não existe
+      if (status === 404) {
+        throw new AppError(`Instância '${instanceName}' não encontrada na Evolution API. Verifique se o nome da instância está correto ou recrie a conexão.`, 404);
       }
 
-      throw error;
+      // Se for erro 401, lançar mensagem clara
+      if (status === 401) {
+        throw new AppError(`Erro de autenticação na Evolution API. Verifique a API Key da instância ${instanceName}`, 401);
+      }
+
+      throw new AppError("ERR_EVOLUTION_API_SEND_TEXT", status || 400);
     }
   }
 
@@ -250,9 +255,24 @@ class EvolutionApiService {
         `Evolution API - Media message sent to ${data.number} via ${data.instanceName}`
       );
       return response.data;
-    } catch (error) {
-      logger.error("Evolution API - Error sending media message:", error);
-      throw new AppError("ERR_EVOLUTION_API_SEND_MEDIA");
+    } catch (error: any) {
+      const status = error?.response?.status;
+      
+      logger.error("Evolution API - Error sending media message:", {
+        status,
+        message: error?.message,
+        instanceName: data.instanceName
+      });
+      
+      if (status === 404) {
+        throw new AppError(`Instância '${data.instanceName}' não encontrada na Evolution API. Verifique se o nome da instância está correto ou recrie a conexão.`, 404);
+      }
+      
+      if (status === 401) {
+        throw new AppError(`Erro de autenticação na Evolution API. Verifique a API Key da instância ${data.instanceName}`, 401);
+      }
+      
+      throw new AppError("ERR_EVOLUTION_API_SEND_MEDIA", status || 400);
     }
   }
 

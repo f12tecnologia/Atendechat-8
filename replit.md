@@ -41,6 +41,7 @@ Atendechat is built with a decoupled frontend and backend architecture.
 - **Security**: JWT for authentication. SSL enabled for external PostgreSQL connections.
 
 ## Recent Changes
+- **Dec 26, 2025**: Improved Evolution API error handling - now shows clear message "Instância não encontrada na Evolution API" when instance doesn't exist (404). Added warning logs for non-standard instanceName formats (recommended format: 55+DDD+number). Added new endpoints for listing, syncing, and deleting Evolution instances.
 - **Dec 26, 2025**: Added validation for ticketId in MessageInputCustom (frontend) and MessageController (backend) to prevent sending messages when ticket data hasn't loaded yet. Frontend shows "Ticket não encontrado. Atualize a página." message, backend returns ERR_NO_TICKET_FOUND error with 400 status.
 - **Dec 24, 2025**: Migrated to Evolution API exclusively - removed Baileys option from frontend WhatsApp modal, backend now uses only Evolution API for all connections. ProviderFactory has BAILEYS_DISABLED=true and routes all message sending through EvolutionProvider.
 - **Dec 24, 2025**: Fixed /tickets page showing raw JSON error instead of login page. Modified isAuth middleware to detect browser navigation (Accept: text/html) and pass to frontend handler. Also added defensive (queues || []) checks in TicketsListCustom to prevent undefined .map() errors.

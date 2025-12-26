@@ -10,6 +10,9 @@ apiIntegrationRoutes.post("/api-integrations", isAuth, ApiIntegrationController.
 apiIntegrationRoutes.get("/api-integrations/:integrationId", isAuth, ApiIntegrationController.show);
 apiIntegrationRoutes.get("/api-integrations/:integrationId/qrcode", isAuth, ApiIntegrationController.getQrCode);
 apiIntegrationRoutes.post("/api-integrations/:integrationId/connection-status", isAuth, ApiIntegrationController.getConnectionStatus);
+apiIntegrationRoutes.get("/api-integrations/:integrationId/evolution-instances", isAuth, ApiIntegrationController.listEvolutionInstances);
+apiIntegrationRoutes.post("/api-integrations/:integrationId/sync-instance", isAuth, ApiIntegrationController.syncEvolutionInstance);
+apiIntegrationRoutes.post("/api-integrations/:integrationId/delete-instance", isAuth, ApiIntegrationController.deleteEvolutionInstance);
 apiIntegrationRoutes.put("/api-integrations/:integrationId", isAuth, ApiIntegrationController.update);
 apiIntegrationRoutes.delete("/api-integrations/:integrationId", isAuth, ApiIntegrationController.remove);
 

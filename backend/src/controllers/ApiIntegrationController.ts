@@ -305,3 +305,141 @@ export const webhook = async (req: Request, res: Response): Promise<Response> =>
     return res.status(500).json({ error: "Error processing webhook" });
   }
 };
+
+export const listEvolutionInstances = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const { integrationId } = req.params;
+    const { companyId } = req.user;
+
+    const integration = await ShowApiIntegrationService({
+      id: integrationId,
+      companyId
+    });
+
+    if (integration.type !== "evolution") {
+      return res.status(400).json({ error: "Integration is not Evolution API type" });
+    }
+
+    const EvolutionApiService = require("../services/EvolutionApiService/EvolutionApiService").default;
+    const evolutionService = new EvolutionApiService({
+      baseUrl: integration.baseUrl,
+      apiKey: integration.apiKey
+    });
+
+    const instances = await evolutionService.fetchInstances();
+    
+    logger.info(`[listEvolutionInstances] Found ${instances?.length || 0} instances`);
+
+    return res.status(200).json({ 
+      instances,
+      currentInstanceName: integration.instanceName
+    });
+  } catch (error: any) {
+    logger.error(`Error listing Evolution instances:`, error.message);
+    return res.status(500).json({ 
+      error: "Error listing instances",
+      message: error.message
+    });
+  }
+};
+
+export const syncEvolutionInstance = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const { integrationId } = req.params;
+    const { companyId } = req.user;
+    const { newInstanceName, deleteOld } = req.body;
+
+    const brazilianPhonePattern = /^55\d{10,11}$/;
+    let formatWarning = null;
+    if (!brazilianPhonePattern.test(newInstanceName)) {
+      logger.warn(`[syncEvolutionInstance] instanceName '${newInstanceName}' does not follow recommended Brazilian phone format (55+DDD+number). This may cause issues.`);
+      formatWarning = "Aviso: Nome da instância não segue o formato recomendado (55+DDD+número). Isso pode causar problemas.";
+    }
+
+    const integration = await ShowApiIntegrationService({
+      id: integrationId,
+      companyId
+    });
+
+    if (integration.type !== "evolution") {
+      return res.status(400).json({ error: "Integration is not Evolution API type" });
+    }
+
+    const EvolutionApiService = require("../services/EvolutionApiService/EvolutionApiService").default;
+    const evolutionService = new EvolutionApiService({
+      baseUrl: integration.baseUrl,
+      apiKey: integration.apiKey
+    });
+
+    const oldInstanceName = integration.instanceName;
+
+    if (deleteOld && oldInstanceName && oldInstanceName !== newInstanceName) {
+      try {
+        await evolutionService.deleteInstance(oldInstanceName);
+        logger.info(`[syncEvolutionInstance] Deleted old instance: ${oldInstanceName}`);
+      } catch (deleteError: any) {
+        logger.warn(`[syncEvolutionInstance] Could not delete old instance: ${deleteError.message}`);
+      }
+    }
+
+    await UpdateApiIntegrationService({
+      integrationData: { instanceName: newInstanceName },
+      integrationId,
+      companyId
+    });
+
+    logger.info(`[syncEvolutionInstance] Updated instanceName from ${oldInstanceName} to ${newInstanceName}`);
+
+    return res.status(200).json({ 
+      success: true,
+      message: `Nome da instância atualizado para ${newInstanceName}`,
+      warning: formatWarning,
+      oldInstanceName,
+      newInstanceName
+    });
+  } catch (error: any) {
+    logger.error(`Error syncing Evolution instance:`, error.message);
+    return res.status(500).json({ 
+      error: "Error syncing instance",
+      message: error.message
+    });
+  }
+};
+
+export const deleteEvolutionInstance = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const { integrationId } = req.params;
+    const { companyId } = req.user;
+    const { instanceName } = req.body;
+
+    const integration = await ShowApiIntegrationService({
+      id: integrationId,
+      companyId
+    });
+
+    if (integration.type !== "evolution") {
+      return res.status(400).json({ error: "Integration is not Evolution API type" });
+    }
+
+    const EvolutionApiService = require("../services/EvolutionApiService/EvolutionApiService").default;
+    const evolutionService = new EvolutionApiService({
+      baseUrl: integration.baseUrl,
+      apiKey: integration.apiKey
+    });
+
+    await evolutionService.deleteInstance(instanceName);
+    
+    logger.info(`[deleteEvolutionInstance] Deleted instance: ${instanceName}`);
+
+    return res.status(200).json({ 
+      success: true,
+      message: `Instância ${instanceName} excluída com sucesso`
+    });
+  } catch (error: any) {
+    logger.error(`Error deleting Evolution instance:`, error.message);
+    return res.status(500).json({ 
+      error: "Error deleting instance",
+      message: error.message
+    });
+  }
+};

@@ -146,10 +146,21 @@ class EvolutionProvider implements WhatsAppProvider {
       Sentry.captureException(err);
       logger.error("[EvolutionProvider] Error sending text:", {
         error: err?.response?.data || err?.message,
-        status: err?.response?.status,
+        status: err?.response?.status || err?.statusCode,
         ticketId: ticket?.id,
         contactNumber: ticket?.contact?.number
       });
+      
+      // Se já é um AppError com mensagem clara, repassa
+      if (err?.statusCode === 404 || err?.message?.includes("não encontrada")) {
+        throw err;
+      }
+      
+      // Verificar erro 404 diretamente
+      if (err?.response?.status === 404) {
+        throw new AppError("Instância não encontrada na Evolution API. Verifique a página de conexões e corrija o nome da instância.", 404);
+      }
+      
       throw new AppError("ERR_SENDING_WAPP_MSG");
     }
   }
@@ -224,10 +235,21 @@ class EvolutionProvider implements WhatsAppProvider {
       Sentry.captureException(err);
       logger.error("[EvolutionProvider] Error sending media:", {
         error: err?.response?.data || err?.message,
-        status: err?.response?.status,
+        status: err?.response?.status || err?.statusCode,
         ticketId: ticket?.id,
         contactNumber: ticket?.contact?.number
       });
+      
+      // Se já é um AppError com mensagem clara, repassa
+      if (err?.statusCode === 404 || err?.message?.includes("não encontrada")) {
+        throw err;
+      }
+      
+      // Verificar erro 404 diretamente
+      if (err?.response?.status === 404) {
+        throw new AppError("Instância não encontrada na Evolution API. Verifique a página de conexões e corrija o nome da instância.", 404);
+      }
+      
       throw new AppError("ERR_SENDING_WAPP_MSG");
     }
   }
