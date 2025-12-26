@@ -39,6 +39,11 @@ export const index = async (req: Request, res: Response): Promise<Response> => {
   const { companyId, profile } = req.user;
   const queues: number[] = [];
 
+  // Validate ticketId before querying database
+  if (!ticketId || ticketId === "undefined" || isNaN(Number(ticketId))) {
+    throw new AppError("ERR_NO_TICKET_FOUND", 400);
+  }
+
   if (profile !== "admin") {
     const user = await User.findByPk(req.user.id, {
       include: [{ model: Queue, as: "queues" }]
@@ -65,6 +70,11 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
   const { body, quotedMsg }: MessageData = req.body;
   const medias = req.files as Express.Multer.File[];
   const { companyId } = req.user;
+
+  // Validate ticketId before querying database
+  if (!ticketId || ticketId === "undefined" || isNaN(Number(ticketId))) {
+    throw new AppError("ERR_NO_TICKET_FOUND", 400);
+  }
 
   const ticket = await ShowTicketService(ticketId, companyId);
 

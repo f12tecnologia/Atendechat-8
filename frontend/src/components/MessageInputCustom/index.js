@@ -494,11 +494,11 @@ const MessageInputCustom = (props) => {
   }, [ticketId, setReplyingMessage]);
 
   // const handleChangeInput = e => {
-  // 	if (isObject(e) && has(e, 'value')) {
-  // 		setInputMessage(e.value);
-  // 	} else {
-  // 		setInputMessage(e.target.value)
-  // 	}
+  //    if (isObject(e) && has(e, 'value')) {
+  //            setInputMessage(e.value);
+  //    } else {
+  //            setInputMessage(e.target.value)
+  //    }
   // };
 
   const handleAddEmoji = (e) => {
@@ -522,6 +522,10 @@ const MessageInputCustom = (props) => {
   };
 
   const handleUploadQuickMessageMedia = async (blob, message) => {
+    if (!ticketId) {
+      toastError({ message: "Ticket não encontrado. Atualize a página." });
+      return;
+    }
     setLoading(true);
     try {
       const extension = blob.type.split("/")[1];
@@ -561,6 +565,10 @@ const MessageInputCustom = (props) => {
   };
 
   const handleUploadMedia = async (e) => {
+    if (!ticketId) {
+      toastError({ message: "Ticket não encontrado. Atualize a página." });
+      return;
+    }
     setLoading(true);
     e.preventDefault();
 
@@ -583,6 +591,10 @@ const MessageInputCustom = (props) => {
 
   const handleSendMessage = async () => {
     if (inputMessage.trim() === "") return;
+    if (!ticketId) {
+      toastError({ message: "Ticket não encontrado. Atualize a página." });
+      return;
+    }
     setLoading(true);
 
     const message = {
@@ -620,6 +632,10 @@ const MessageInputCustom = (props) => {
   };
 
   const handleUploadAudio = async () => {
+    if (!ticketId) {
+      toastError({ message: "Ticket não encontrado. Atualize a página." });
+      return;
+    }
     setLoading(true);
     try {
       const [, blob] = await Mp3Recorder.stop().getMp3();
