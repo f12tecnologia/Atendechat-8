@@ -8,11 +8,14 @@ type Params = {
 };
 
 const FindService = async ({ companyId, userId }: Params): Promise<QuickMessage[]> => {
+  // Build where clause - only include userId if it's defined
+  const whereClause: any = { companyId };
+  if (userId !== undefined && userId !== null && userId !== 'undefined') {
+    whereClause.userId = userId;
+  }
+
   const notes: QuickMessage[] = await QuickMessage.findAll({
-    where: {
-      companyId,
-      userId,
-    },
+    where: whereClause,
     include: [{ model: Company, as: "company", attributes: ["id", "name"] }],
     order: [["shortcode", "ASC"]]
   });
