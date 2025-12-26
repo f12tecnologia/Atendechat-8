@@ -45,8 +45,9 @@ const MessagesAPI = () => {
   useEffect(() => {
     async function fetchData() {
       const companyId = localStorage.getItem("companyId");
+      if (!companyId) return;
       const planConfigs = await getPlanCompany(undefined, companyId);
-      if (!planConfigs.plan.useExternalApi) {
+      if (!planConfigs?.plan?.useExternalApi) {
         toast.error("messagesAPI.toasts.unauthorized");
         setTimeout(() => {
           history.push(`/`)
