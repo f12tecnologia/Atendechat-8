@@ -5,12 +5,25 @@ import Message from "../../models/Message";
 import Whatsapp from "../../models/Whatsapp";
 import Queue from "../../models/Queue";
 import ApiIntegration from "../../models/ApiIntegration";
+import Setting from "../../models/Setting";
 import CreateOrUpdateContactService from "../ContactServices/CreateOrUpdateContactService";
 import FindOrCreateTicketService from "../TicketServices/FindOrCreateTicketService";
 import CreateMessageService from "../MessageServices/CreateMessageService";
 import { getIO } from "../../libs/socket";
 import { logger } from "../../utils/logger";
 import EvolutionApiService from "./EvolutionApiService";
+
+const isValidPhoneNumber = (number: string): boolean => {
+  if (!number) return false;
+  const cleanNumber = number.replace(/\D/g, "");
+  if (cleanNumber.length < 8 || cleanNumber.length > 15) {
+    return false;
+  }
+  if (/^0+$/.test(cleanNumber)) {
+    return false;
+  }
+  return true;
+};
 
 const publicFolder = path.resolve(__dirname, "..", "..", "..", "public");
 
@@ -331,7 +344,6 @@ const ProcessEvolutionWebhookService = async (
     }
 
     if (!whatsapp) {
-      // Não criar nova conexão - ignorar webhook
       logger.warn(`[WEBHOOK] No WhatsApp connection found for instance: ${instance}. Skipping message.`);
       return;
     }
@@ -340,48 +352,71 @@ const ProcessEvolutionWebhookService = async (
     const isGroup = data.key.remoteJid.includes("@g.us");
     const isLid = data.key.remoteJid.includes("@lid");
     
+    // Verificar configuração CheckMsgIsGroup - se ativada, ignorar mensagens de grupo
+    const msgIsGroupBlockSetting = await Setting.findOne({
+      where: {
+        companyId,
+        key: "CheckMsgIsGroup"
+      }
+    });
+    
+    if (msgIsGroupBlockSetting?.value === "enabled" && isGroup) {
+      logger.info(`[WEBHOOK] Ignoring group message (CheckMsgIsGroup is enabled) - remoteJid: ${data.key.remoteJid}`);
+      return;
+    }
+    
     // Log para debug
-    logger.info(`[WEBHOOK] Processing message - remoteJid: ${data.key.remoteJid}, remoteJidAlt: ${data.key.remoteJidAlt || 'N/A'}`);
+    logger.info(`[WEBHOOK] Processing message - remoteJid: ${data.key.remoteJid}, remoteJidAlt: ${data.key.remoteJidAlt || 'N/A'}, isGroup: ${isGroup}`);
     
     // remoteJidAlt contém o número real quando remoteJid é um LID
     const remoteJidAlt = data.key.remoteJidAlt || "";
     
     // Para responder, precisamos do JID original (com @lid se for LID)
-    // Isso é CRÍTICO: Evolution API precisa do @lid para responder a dispositivos vinculados
     const remoteJidForReply = data.key.remoteJid;
     
-    // Para o número do contato (exibição), extraímos o número real
-    // SEMPRE priorizar remoteJidAlt quando disponível (número real do telefone)
     let contactNumber: string;
-    let numberForProfilePic: string; // Número para buscar foto de perfil
+    let contactName: string;
+    let numberForProfilePic: string;
+    let profilePicUrl = "";
+    const instanceNameToUse = apiIntegration.instanceName || instance;
     
-    if (remoteJidAlt) {
+    if (isGroup) {
+      // MENSAGEM DE GRUPO: criar contato do GRUPO (não do participante)
+      // O número do grupo é o ID do grupo (ex: 120363136866815944@g.us -> 120363136866815944)
+      contactNumber = data.key.remoteJid.replace("@g.us", "");
+      // Nome do grupo pode vir no pushName ou usamos o ID
+      contactName = data.pushName || `Grupo ${contactNumber}`;
+      numberForProfilePic = "";
+      
+      logger.info(`[WEBHOOK] Group message - creating group contact: ${contactName} (${contactNumber})`);
+    } else if (remoteJidAlt) {
       // Usar número real do remoteJidAlt para exibição e foto
       contactNumber = remoteJidAlt
         .replace("@s.whatsapp.net", "")
-        .replace("@g.us", "")
         .replace("@lid", "");
       numberForProfilePic = contactNumber;
+      contactName = data.pushName || contactNumber;
       logger.info(`[WEBHOOK] Using remoteJidAlt for contact: ${contactNumber}, remoteJid for reply: ${remoteJidForReply}`);
     } else if (isLid) {
-      // LID sem remoteJidAlt - precisamos buscar o número real
-      // Por enquanto, usar o LID mas marcar que não temos o número real
+      // LID sem remoteJidAlt - não temos o número real
       contactNumber = data.key.remoteJid.replace("@lid", "");
-      numberForProfilePic = contactNumber; // Pode não funcionar para foto
+      numberForProfilePic = contactNumber;
+      contactName = data.pushName || contactNumber;
       logger.warn(`[WEBHOOK] LID without remoteJidAlt: ${data.key.remoteJid}. Contact may show LID instead of real number.`);
     } else {
       // Número normal (@s.whatsapp.net)
-      contactNumber = data.key.remoteJid
-        .replace("@s.whatsapp.net", "")
-        .replace("@g.us", "");
+      contactNumber = data.key.remoteJid.replace("@s.whatsapp.net", "");
       numberForProfilePic = contactNumber;
+      contactName = data.pushName || contactNumber;
+    }
+    
+    // Validar número de telefone (não aplicável a grupos)
+    if (!isGroup && !isValidPhoneNumber(contactNumber)) {
+      logger.warn(`[WEBHOOK] Invalid phone number rejected: ${contactNumber}`);
+      return;
     }
     
     // Buscar foto de perfil (apenas para contatos individuais, não grupos)
-    let profilePicUrl = "";
-    // Usar instanceName da integração ou o instance do webhook como fallback
-    const instanceNameToUse = apiIntegration.instanceName || instance;
-    
     if (!isGroup && numberForProfilePic && instanceNameToUse) {
       try {
         const evolutionService = new EvolutionApiService({
@@ -411,7 +446,7 @@ const ProcessEvolutionWebhookService = async (
     
     // Criar ou atualizar contato
     const contactData = {
-      name: data.pushName || contactNumber,
+      name: contactName,
       number: contactNumber,
       profilePicUrl,
       isGroup
