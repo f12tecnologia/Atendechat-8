@@ -85,6 +85,11 @@ const usePlans = () => {
 
   const getPlanCompany = useCallback(async (planId, companyId) => {
     try {
+      // Skip API call if companyId is undefined
+      if (!companyId || companyId === 'undefined') {
+        console.warn("[usePlans] getPlanCompany called with invalid companyId:", companyId);
+        return null;
+      }
       const { data } = await api.get(`/companies/listPlan/${companyId}`);
       return data;
     } catch (err) {
