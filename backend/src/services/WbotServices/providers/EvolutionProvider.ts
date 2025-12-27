@@ -72,9 +72,19 @@ class EvolutionProvider implements WhatsAppProvider {
 
   async sendText({ body, ticket, quotedMsg }: SendTextOptions): Promise<any> {
     try {
+      // Recarregar ticket com user para garantir que temos os dados do atendente
+      await ticket.reload({
+        include: [
+          { model: Contact, as: "contact" },
+          { model: User, as: "user" },
+          { model: Whatsapp, as: "whatsapp" }
+        ]
+      });
+
       // Log detalhado para debug
       logger.info(`[EvolutionProvider] sendText called for ticket ${ticket.id}`);
       logger.info(`[EvolutionProvider] Ticket whatsapp details: id=${ticket.whatsapp?.id}, name=${ticket.whatsapp?.name}, apiIntegrationId=${ticket.whatsapp?.apiIntegrationId}`);
+      logger.info(`[EvolutionProvider] Ticket user: ${ticket.user?.name || 'NO USER'}`);
       
       // Buscar integração Evolution API
       const apiIntegration = await ApiIntegration.findByPk(ticket.whatsapp.apiIntegrationId);
@@ -167,6 +177,17 @@ class EvolutionProvider implements WhatsAppProvider {
 
   async sendMedia({ media, ticket, body }: SendMediaOptions): Promise<any> {
     try {
+      // Recarregar ticket com user para garantir que temos os dados do atendente
+      await ticket.reload({
+        include: [
+          { model: Contact, as: "contact" },
+          { model: User, as: "user" },
+          { model: Whatsapp, as: "whatsapp" }
+        ]
+      });
+
+      logger.info(`[EvolutionProvider] Ticket user in sendMedia: ${ticket.user?.name || 'NO USER'}`);
+
       // Buscar integração Evolution API
       const apiIntegration = await ApiIntegration.findByPk(ticket.whatsapp.apiIntegrationId);
 

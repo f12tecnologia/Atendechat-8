@@ -449,14 +449,21 @@ const MessagesList = ({ ticket, ticketId, isGroup }) => {
     
     // Verificar se é imagem (suporta vários tipos MIME)
     if (message.mediaType === "image" || (message.mediaUrl && message.mediaUrl.match(/\.(jpg|jpeg|png|gif|webp)$/i))) {
-      // Adicionar prefixo /public/ se necessário
-      const imageUrl = message.mediaUrl.startsWith('/') ? message.mediaUrl : `/public/${message.mediaUrl}`;
+      // Normalizar URL da imagem - aceita tanto /public/file.jpg quanto file.jpg
+      let imageUrl = message.mediaUrl;
+      if (!imageUrl.startsWith('/public/') && !imageUrl.startsWith('http')) {
+        imageUrl = `/public/${imageUrl}`;
+      }
       return <ModalImageCors imageUrl={imageUrl} />;
     } 
     
     // Verificar se é áudio
     if (message.mediaType === "audio" || (message.mediaUrl && message.mediaUrl.match(/\.(mp3|ogg|oga|wav|m4a)$/i))) {
-      const audioUrl = message.mediaUrl.startsWith('/') ? message.mediaUrl : `/public/${message.mediaUrl}`;
+      // Normalizar URL do áudio
+      let audioUrl = message.mediaUrl;
+      if (!audioUrl.startsWith('/public/') && !audioUrl.startsWith('http')) {
+        audioUrl = `/public/${audioUrl}`;
+      }
       return (
         <audio controls>
           <source src={audioUrl} type="audio/ogg"></source>
@@ -466,7 +473,11 @@ const MessagesList = ({ ticket, ticketId, isGroup }) => {
     
     // Verificar se é vídeo
     if (message.mediaType === "video" || (message.mediaUrl && message.mediaUrl.match(/\.(mp4|avi|mov|webm)$/i))) {
-      const videoUrl = message.mediaUrl.startsWith('/') ? message.mediaUrl : `/public/${message.mediaUrl}`;
+      // Normalizar URL do vídeo
+      let videoUrl = message.mediaUrl;
+      if (!videoUrl.startsWith('/public/') && !videoUrl.startsWith('http')) {
+        videoUrl = `/public/${videoUrl}`;
+      }
       return (
         <video
           className={classes.messageMedia}
@@ -478,7 +489,11 @@ const MessagesList = ({ ticket, ticketId, isGroup }) => {
     
     // Para documentos e outros tipos de arquivo
     if (message.mediaUrl) {
-      const documentUrl = message.mediaUrl.startsWith('/') ? message.mediaUrl : `/public/${message.mediaUrl}`;
+      // Normalizar URL do documento
+      let documentUrl = message.mediaUrl;
+      if (!documentUrl.startsWith('/public/') && !documentUrl.startsWith('http')) {
+        documentUrl = `/public/${documentUrl}`;
+      }
       return (
         <>
           <div className={classes.downloadMedia}>

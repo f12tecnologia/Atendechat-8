@@ -42,7 +42,7 @@ const processMediaMessage = async (
     }
 
     let base64Data: string | null = null;
-    
+
     // Opção 1: base64 já está no webhook
     if (messageContent.base64) {
       base64Data = messageContent.base64;
@@ -72,13 +72,13 @@ const processMediaMessage = async (
           baseUrl: apiIntegration.baseUrl,
           apiKey: apiIntegration.apiKey
         });
-        
+
         const fetchedBase64 = await evolutionService.getBase64FromMediaMessage(
           instanceName,
           messageId,
           false
         );
-        
+
         if (fetchedBase64) {
           base64Data = fetchedBase64;
           // Remover prefixo data URI se presente
@@ -105,11 +105,11 @@ const processMediaMessage = async (
     // Salvar arquivo de forma assíncrona
     const filePath = path.join(publicFolder, fileName);
     const buffer = Buffer.from(base64Data, "base64");
-    
+
     await fs.promises.writeFile(filePath, buffer);
 
     logger.info(`[MEDIA] Saved media to ${fileName} (${buffer.length} bytes)`);
-    
+
     // Retornar caminho completo para o frontend acessar via /public/filename
     return `/public/${fileName}`;
   } catch (error) {
@@ -173,7 +173,7 @@ const ProcessEvolutionWebhookService = async (
     // mas o código espera lowercase estilo Baileys (messages.upsert, connection.update)
     const originalEvent = event;
     event = event.toLowerCase().replace(/_/g, ".");
-    
+
     if (originalEvent !== event) {
       logger.info(`[WEBHOOK] Normalized event name: ${originalEvent} -> ${event}`);
     }
@@ -197,13 +197,13 @@ const ProcessEvolutionWebhookService = async (
           isActive: true
         }
       });
-      
+
       if (!apiIntegration) {
         logger.warn(`[WEBHOOK] No Evolution integration found for company ${companyId}. Skipping.`);
         return;
       }
     }
-    
+
     logger.info(`[WEBHOOK] Found integration: id=${apiIntegration.id}, name=${apiIntegration.name}`);
 
     // Processar eventos de conexão
@@ -211,7 +211,7 @@ const ProcessEvolutionWebhookService = async (
       const rawState = data.state || data.status;
       const state = rawState?.toString().toUpperCase();
       const qr = data.qr;
-      
+
       logger.info(`Evolution connection update: instance=${instance}, state=${state}, rawState=${rawState}`);
 
       // Buscar conexão WhatsApp por apiIntegrationId (prioritário)
@@ -235,7 +235,7 @@ const ProcessEvolutionWebhookService = async (
             ]
           }
         });
-        
+
         // Se encontrou, vincular à ApiIntegration
         if (whatsapp) {
           await whatsapp.update({ apiIntegrationId: apiIntegration.id });
@@ -262,7 +262,7 @@ const ProcessEvolutionWebhookService = async (
       };
 
       const newStatus = stateMapping[state] || "PENDING";
-      
+
       // Atualizar status da conexão
       await whatsapp.update({
         status: newStatus,
@@ -311,7 +311,7 @@ const ProcessEvolutionWebhookService = async (
       logger.warn(`[WEBHOOK] No key data in webhook - data structure: ${JSON.stringify(Object.keys(data))}`);
       return;
     }
-    
+
     logger.info(`[WEBHOOK] Processing message: id=${data.key.id}, from=${data.key.remoteJid}`);
 
     // Buscar conexão WhatsApp por apiIntegrationId
@@ -335,7 +335,7 @@ const ProcessEvolutionWebhookService = async (
           ]
         }
       });
-      
+
       // Se encontrou, vincular à ApiIntegration
       if (whatsapp) {
         await whatsapp.update({ apiIntegrationId: apiIntegration.id });
@@ -351,7 +351,7 @@ const ProcessEvolutionWebhookService = async (
     // Extrair número do contato
     const isGroup = data.key.remoteJid.includes("@g.us");
     const isLid = data.key.remoteJid.includes("@lid");
-    
+
     // Verificar configuração CheckMsgIsGroup - se ativada, ignorar mensagens de grupo
     const msgIsGroupBlockSetting = await Setting.findOne({
       where: {
@@ -359,27 +359,27 @@ const ProcessEvolutionWebhookService = async (
         key: "CheckMsgIsGroup"
       }
     });
-    
+
     if (msgIsGroupBlockSetting?.value === "enabled" && isGroup) {
       logger.info(`[WEBHOOK] Ignoring group message (CheckMsgIsGroup is enabled) - remoteJid: ${data.key.remoteJid}`);
       return;
     }
-    
+
     // Log para debug
     logger.info(`[WEBHOOK] Processing message - remoteJid: ${data.key.remoteJid}, remoteJidAlt: ${data.key.remoteJidAlt || 'N/A'}, isGroup: ${isGroup}`);
-    
+
     // remoteJidAlt contém o número real quando remoteJid é um LID
     const remoteJidAlt = data.key.remoteJidAlt || "";
-    
+
     // Para responder, precisamos do JID original (com @lid se for LID)
     const remoteJidForReply = data.key.remoteJid;
-    
+
     let contactNumber: string;
     let contactName: string;
     let numberForProfilePic: string;
     let profilePicUrl = "";
     const instanceNameToUse = apiIntegration.instanceName || instance;
-    
+
     if (isGroup) {
       // MENSAGEM DE GRUPO: criar contato do GRUPO (não do participante)
       // O número do grupo é o ID do grupo (ex: 120363136866815944@g.us -> 120363136866815944)
@@ -387,7 +387,7 @@ const ProcessEvolutionWebhookService = async (
       // Nome do grupo pode vir no pushName ou usamos o ID
       contactName = data.pushName || `Grupo ${contactNumber}`;
       numberForProfilePic = "";
-      
+
       logger.info(`[WEBHOOK] Group message - creating group contact: ${contactName} (${contactNumber})`);
     } else if (remoteJidAlt) {
       // Usar número real do remoteJidAlt para exibição e foto
@@ -395,27 +395,27 @@ const ProcessEvolutionWebhookService = async (
         .replace("@s.whatsapp.net", "")
         .replace("@lid", "");
       numberForProfilePic = contactNumber;
-      contactName = data.pushName || contactNumber;
+      contactName = data.pushName || contactNumber; // Usar pushName se disponível para nome do contato
       logger.info(`[WEBHOOK] Using remoteJidAlt for contact: ${contactNumber}, remoteJid for reply: ${remoteJidForReply}`);
     } else if (isLid) {
       // LID sem remoteJidAlt - não temos o número real
       contactNumber = data.key.remoteJid.replace("@lid", "");
       numberForProfilePic = contactNumber;
-      contactName = data.pushName || contactNumber;
+      contactName = data.pushName || contactNumber; // Usar pushName se disponível
       logger.warn(`[WEBHOOK] LID without remoteJidAlt: ${data.key.remoteJid}. Contact may show LID instead of real number.`);
     } else {
       // Número normal (@s.whatsapp.net)
       contactNumber = data.key.remoteJid.replace("@s.whatsapp.net", "");
       numberForProfilePic = contactNumber;
-      contactName = data.pushName || contactNumber;
+      contactName = data.pushName || contactNumber; // Usar pushName se disponível
     }
-    
+
     // Validar número de telefone (não aplicável a grupos)
     if (!isGroup && !isValidPhoneNumber(contactNumber)) {
       logger.warn(`[WEBHOOK] Invalid phone number rejected: ${contactNumber}`);
       return;
     }
-    
+
     // Buscar foto de perfil (apenas para contatos individuais, não grupos)
     if (!isGroup && numberForProfilePic && instanceNameToUse) {
       try {
@@ -423,16 +423,16 @@ const ProcessEvolutionWebhookService = async (
           baseUrl: apiIntegration.baseUrl,
           apiKey: apiIntegration.apiKey
         });
-        
+
         logger.info(`[WEBHOOK] Fetching profile picture for ${numberForProfilePic} via instance ${instanceNameToUse}`);
-        
+
         const fetchedProfilePic = await evolutionService.getProfilePicture(
           instanceNameToUse,
           numberForProfilePic
         );
-        
+
         profilePicUrl = fetchedProfilePic || "";
-        
+
         if (profilePicUrl) {
           logger.info(`[WEBHOOK] Profile picture fetched: ${profilePicUrl.substring(0, 80)}...`);
         } else {
@@ -443,7 +443,7 @@ const ProcessEvolutionWebhookService = async (
         profilePicUrl = "";
       }
     }
-    
+
     // Criar ou atualizar contato
     const contactData = {
       name: contactName,
@@ -478,13 +478,13 @@ const ProcessEvolutionWebhookService = async (
     });
 
     // Ordenar filas por orderQueue em memória (mais confiável que SQL order)
-    const sortedQueues = (whatsapp.queues || []).sort((a, b) => 
+    const sortedQueues = (whatsapp.queues || []).sort((a, b) =>
       (a.orderQueue || 9999) - (b.orderQueue || 9999)
     );
-    
+
     const defaultQueueId = sortedQueues.length > 0 ? sortedQueues[0].id : 0;
     const defaultQueueName = sortedQueues.length > 0 ? sortedQueues[0].name : "none";
-    
+
     logger.info(`[WEBHOOK] Default queue for whatsapp ${whatsapp.id}: ${defaultQueueId} (${defaultQueueName})`);
 
     // Criar ou encontrar ticket
@@ -509,13 +509,10 @@ const ProcessEvolutionWebhookService = async (
       } else if (data.message.extendedTextMessage) {
         body = data.message.extendedTextMessage.text;
       } else if (data.message.imageMessage) {
-        body = data.message.imageMessage.caption || "[imagem]";
         mediaType = "image";
         mimetype = data.message.imageMessage.mimetype || "image/jpeg";
-        // Usar messageId + timestamp para evitar colisões
         fileName = `${data.key.id}_${Date.now()}.${mimetype.split("/")[1] || "jpg"}`;
-        
-        // Processar mídia: base64, mediaUrl ou buscar via API
+
         const savedPath = await processMediaMessage(
           data.message.imageMessage,
           data.key.id,
@@ -524,13 +521,13 @@ const ProcessEvolutionWebhookService = async (
           apiIntegration
         );
         if (savedPath) mediaUrl = savedPath;
-        
+        body = data.message.imageMessage.caption || (mediaUrl ? 'Foto' : ''); // Usar 'Foto' como fallback se houver URL
+
       } else if (data.message.videoMessage) {
-        body = data.message.videoMessage.caption || "[vídeo]";
         mediaType = "video";
         mimetype = data.message.videoMessage.mimetype || "video/mp4";
         fileName = `${data.key.id}_${Date.now()}.${mimetype.split("/")[1] || "mp4"}`;
-        
+
         const savedPath = await processMediaMessage(
           data.message.videoMessage,
           data.key.id,
@@ -539,14 +536,14 @@ const ProcessEvolutionWebhookService = async (
           apiIntegration
         );
         if (savedPath) mediaUrl = savedPath;
-        
+        body = data.message.videoMessage.caption || (mediaUrl ? 'Vídeo' : ''); // Usar 'Vídeo' como fallback se houver URL
+
       } else if (data.message.audioMessage) {
-        body = "[áudio]";
         mediaType = "audio";
         mimetype = data.message.audioMessage.mimetype || "audio/ogg";
         const ext = data.message.audioMessage.ptt ? "ogg" : (mimetype.split("/")[1] || "ogg");
         fileName = `${data.key.id}_${Date.now()}.${ext}`;
-        
+
         const savedPath = await processMediaMessage(
           data.message.audioMessage,
           data.key.id,
@@ -555,15 +552,14 @@ const ProcessEvolutionWebhookService = async (
           apiIntegration
         );
         if (savedPath) mediaUrl = savedPath;
-        
+        body = mediaUrl ? 'Áudio' : ''; // Apenas indicar que é áudio se foi salvo
+
       } else if (data.message.documentMessage) {
-        body = data.message.documentMessage.caption || data.message.documentMessage.fileName || "[documento]";
         mediaType = "document";
         mimetype = data.message.documentMessage.mimetype || "application/octet-stream";
-        // Para documentos, usar o nome original ou gerar um único
         const originalName = data.message.documentMessage.fileName || "";
         fileName = originalName ? `${data.key.id}_${originalName}` : `${data.key.id}_${Date.now()}.pdf`;
-        
+
         const savedPath = await processMediaMessage(
           data.message.documentMessage,
           data.key.id,
@@ -572,13 +568,13 @@ const ProcessEvolutionWebhookService = async (
           apiIntegration
         );
         if (savedPath) mediaUrl = savedPath;
-        
+        body = data.message.documentMessage.caption || (mediaUrl ? 'Arquivo' : originalName || '[documento]'); // Usar nome original ou 'Arquivo'
+
       } else if (data.message.stickerMessage) {
-        body = "[sticker]";
         mediaType = "sticker";
         mimetype = data.message.stickerMessage.mimetype || "image/webp";
         fileName = `${data.key.id}_${Date.now()}.webp`;
-        
+
         const savedPath = await processMediaMessage(
           data.message.stickerMessage,
           data.key.id,
@@ -587,6 +583,7 @@ const ProcessEvolutionWebhookService = async (
           apiIntegration
         );
         if (savedPath) mediaUrl = savedPath;
+        body = mediaUrl ? 'Sticker' : ''; // Apenas indicar que é sticker se foi salvo
       }
     }
 
