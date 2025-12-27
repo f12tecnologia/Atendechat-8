@@ -449,24 +449,28 @@ const MessagesList = ({ ticket, ticketId, isGroup }) => {
     
     // Verificar se é imagem (suporta vários tipos MIME)
     if (message.mediaType === "image" || (message.mediaUrl && message.mediaUrl.match(/\.(jpg|jpeg|png|gif|webp)$/i))) {
-      return <ModalImageCors imageUrl={message.mediaUrl} />;
+      // Adicionar prefixo /public/ se necessário
+      const imageUrl = message.mediaUrl.startsWith('/') ? message.mediaUrl : `/public/${message.mediaUrl}`;
+      return <ModalImageCors imageUrl={imageUrl} />;
     } 
     
     // Verificar se é áudio
     if (message.mediaType === "audio" || (message.mediaUrl && message.mediaUrl.match(/\.(mp3|ogg|oga|wav|m4a)$/i))) {
+      const audioUrl = message.mediaUrl.startsWith('/') ? message.mediaUrl : `/public/${message.mediaUrl}`;
       return (
         <audio controls>
-          <source src={message.mediaUrl} type="audio/ogg"></source>
+          <source src={audioUrl} type="audio/ogg"></source>
         </audio>
       );
     } 
     
     // Verificar se é vídeo
     if (message.mediaType === "video" || (message.mediaUrl && message.mediaUrl.match(/\.(mp4|avi|mov|webm)$/i))) {
+      const videoUrl = message.mediaUrl.startsWith('/') ? message.mediaUrl : `/public/${message.mediaUrl}`;
       return (
         <video
           className={classes.messageMedia}
-          src={message.mediaUrl}
+          src={videoUrl}
           controls
         />
       );
@@ -474,6 +478,7 @@ const MessagesList = ({ ticket, ticketId, isGroup }) => {
     
     // Para documentos e outros tipos de arquivo
     if (message.mediaUrl) {
+      const documentUrl = message.mediaUrl.startsWith('/') ? message.mediaUrl : `/public/${message.mediaUrl}`;
       return (
         <>
           <div className={classes.downloadMedia}>
@@ -482,7 +487,7 @@ const MessagesList = ({ ticket, ticketId, isGroup }) => {
               color="primary"
               variant="outlined"
               target="_blank"
-              href={message.mediaUrl}
+              href={documentUrl}
             >
               {i18n.t("messagesList.header.buttons.download")}
             </Button>
@@ -612,7 +617,7 @@ const MessagesList = ({ ticket, ticketId, isGroup }) => {
             && (
               <div className={classes.downloadMedia}>
                 <audio controls>
-                  <source src={message.quotedMsg.mediaUrl} type="audio/ogg"></source>
+                  <source src={message.quotedMsg.mediaUrl.startsWith('/') ? message.quotedMsg.mediaUrl : `/public/${message.quotedMsg.mediaUrl}`} type="audio/ogg"></source>
                 </audio>
               </div>
             )
@@ -621,7 +626,7 @@ const MessagesList = ({ ticket, ticketId, isGroup }) => {
             && (
               <video
                 className={classes.messageMedia}
-                src={message.quotedMsg.mediaUrl}
+                src={message.quotedMsg.mediaUrl.startsWith('/') ? message.quotedMsg.mediaUrl : `/public/${message.quotedMsg.mediaUrl}`}
                 controls
               />
             )
@@ -634,7 +639,7 @@ const MessagesList = ({ ticket, ticketId, isGroup }) => {
                   color="primary"
                   variant="outlined"
                   target="_blank"
-                  href={message.quotedMsg.mediaUrl}
+                  href={message.quotedMsg.mediaUrl.startsWith('/') ? message.quotedMsg.mediaUrl : `/public/${message.quotedMsg.mediaUrl}`}
                 >
                   {i18n.t("messagesList.header.buttons.download")}
                 </Button>
@@ -643,7 +648,7 @@ const MessagesList = ({ ticket, ticketId, isGroup }) => {
           }
 
           {message.quotedMsg.mediaType === "image"
-            && (<ModalImageCors imageUrl={message.quotedMsg.mediaUrl} />)}
+            && (<ModalImageCors imageUrl={message.quotedMsg.mediaUrl.startsWith('/') ? message.quotedMsg.mediaUrl : `/public/${message.quotedMsg.mediaUrl}`} />)}
 
           {message.quotedMsg.mediaType === "contactMessage"
             && (
