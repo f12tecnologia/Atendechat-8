@@ -41,6 +41,8 @@ Atendechat is built with a decoupled frontend and backend architecture.
 - **Security**: JWT for authentication. SSL enabled for external PostgreSQL connections.
 
 ## Recent Changes
+- **Dec 27, 2025**: Fixed attendant name showing "undefined" in automatic messages - updated all formatBody calls in wbotMessageListener.ts, EvolutionProvider.ts, SendWhatsAppMessage.ts, and SendWhatsAppMedia.ts to pass { contact, user: ticket.user } for proper Mustache template rendering of {{atendente}}, {{attendant}}, {{user}}, {{userName}}.
+- **Dec 27, 2025**: Fixed Evolution webhook media URLs - processMediaMessage now returns "/public/${fileName}" instead of just filename, ensuring images are accessible from frontend via ModalImageCors component.
 - **Dec 27, 2025**: Added Cloud API credential persistence - new fields cloudApiToken, cloudApiNumberId, cloudApiBusinessId in Whatsapp model with migration. Backend validation rejects Cloud API provisioning without mandatory credentials. Credentials are stored in database for reconnects and message sending.
 - **Dec 27, 2025**: Fixed media messages not showing images - added mediaUrl field to CreateMessageService call in SendWhatsAppMedia.ts for Evolution provider. Previously mediaUrl was missing, causing images to display as text only.
 - **Dec 27, 2025**: Fixed "undefined:" prefix in message body when signMessage is enabled but user.name is not loaded. Added null check in MessageInputCustom to only add signature when both signMessage is true AND user.name is available.

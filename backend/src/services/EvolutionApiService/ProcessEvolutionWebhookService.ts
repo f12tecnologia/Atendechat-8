@@ -110,8 +110,8 @@ const processMediaMessage = async (
 
     logger.info(`[MEDIA] Saved media to ${fileName} (${buffer.length} bytes)`);
     
-    // Retornar nome do arquivo (o frontend acessa via /public/filename)
-    return fileName;
+    // Retornar caminho completo para o frontend acessar via /public/filename
+    return `/public/${fileName}`;
   } catch (error) {
     logger.error(`[MEDIA] Error processing media: ${error}`);
     return "";

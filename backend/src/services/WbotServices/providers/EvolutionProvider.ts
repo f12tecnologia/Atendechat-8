@@ -128,7 +128,7 @@ class EvolutionProvider implements WhatsAppProvider {
         throw new AppError("Não foi possível enviar mensagem. O contato não tem um número válido para resposta.");
       }
       
-      const textMessage = formatBody(body, ticket.contact);
+      const textMessage = formatBody(body, { contact: ticket.contact, user: ticket.user });
 
       logger.info(`[EvolutionProvider] Sending to: ${replyNumber}`);
 
@@ -204,7 +204,7 @@ class EvolutionProvider implements WhatsAppProvider {
         throw new AppError("Não foi possível enviar mídia. O contato não tem um número válido para resposta.");
       }
       
-      const caption = formatBody(body || "", ticket.contact);
+      const caption = formatBody(body || "", { contact: ticket.contact, user: ticket.user });
 
       logger.info(`[EvolutionProvider] Sending media to: ${replyNumber}`);
 

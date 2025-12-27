@@ -131,7 +131,7 @@ const SendWhatsAppMedia = async ({
 
   // For Evolution provider, save the message to database
   if (provider.getProviderName() === "evolution") {
-    const caption = formatBody(body || "", ticket.contact);
+    const caption = formatBody(body || "", { contact: ticket.contact, user: ticket.user });
     const mimeType = media.mimetype || lookup(media.path) || "";
     const typeMessage = mimeType.split("/")[0];
     

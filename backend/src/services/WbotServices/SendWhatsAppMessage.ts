@@ -27,7 +27,7 @@ const SendWhatsAppMessage = async ({
 
   // For Evolution provider, save the message to database
   if (provider.getProviderName() === "evolution") {
-    const formattedBody = formatBody(body, ticket.contact);
+    const formattedBody = formatBody(body, { contact: ticket.contact, user: ticket.user });
     
     // Extract message ID from Evolution response or generate one
     let messageId = uuidv4();
