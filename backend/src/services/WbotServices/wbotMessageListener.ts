@@ -1104,7 +1104,7 @@ const verifyQueue = async (
       greetingMessage.length > 1 &&
       sendGreetingMessageOneQueues?.value === "enabled"
     ) {
-      const body = formatBody(`${greetingMessage}`, { contact, user: ticket.user });
+      const body = formatBody(`${greetingMessage}`, ticket);
 
       await wbot.sendMessage(
         `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
@@ -1183,7 +1183,7 @@ const verifyQueue = async (
     });
 
     const textMessage = {
-      text: formatBody(`\u200e${greetingMessage}\n\n${options}`, { contact, user: ticket.user })
+      text: formatBody(`\u200e${greetingMessage}`, ticket)
     };
 
     const sendMsg = await wbot.sendMessage(
@@ -1292,7 +1292,7 @@ const verifyQueue = async (
 
       const body = formatBody(
         `\u200e${choosenQueue.greetingMessage}`,
-        { contact: ticket.contact, user: ticket.user }
+        ticket
       );
       if (choosenQueue.greetingMessage) {
         const sentMessage = await wbot.sendMessage(
@@ -1391,7 +1391,7 @@ export const handleRating = async (
   });
 
   if (complationMessage) {
-    const body = formatBody(`\u200e${complationMessage}`, { contact: ticket.contact, user: ticket.user });
+    const body = formatBody(`\u200e${complationMessage}`, ticket);
     await SendWhatsAppMessage({ body, ticket });
   }
 
@@ -1560,7 +1560,7 @@ const handleChartbot = async (
       });
 
       const buttonMessage = {
-        text: formatBody(`\u200e${queue.greetingMessage}`, { contact: ticket.contact, user: ticket.user }),
+        text: formatBody(`\u200e${queue.greetingMessage}`, ticket),
         buttons,
         headerType: 4
       };
@@ -1655,7 +1655,7 @@ const handleChartbot = async (
         ];
 
         const listMessage = {
-          text: formatBody(`\u200e${currentOption.message}`, { contact: ticket.contact, user: ticket.user }),
+          text: formatBody(`\u200e${currentOption.message}`, ticket),
           buttonText: "Escolha uma opção",
           sections
         };
@@ -1686,7 +1686,7 @@ const handleChartbot = async (
         });
 
         const buttonMessage = {
-          text: formatBody(`\u200e${currentOption.message}`, { contact: ticket.contact, user: ticket.user }),
+          text: formatBody(`\u200e${currentOption.message}`, ticket),
           buttons,
           headerType: 4
         };
@@ -1712,7 +1712,7 @@ const handleChartbot = async (
         const textMessage = {
           text: formatBody(
             `\u200e${currentOption.message}\n\n${options}`,
-            { contact: ticket.contact, user: ticket.user }
+            ticket
           )
         };
 

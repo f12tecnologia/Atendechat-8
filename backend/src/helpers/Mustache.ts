@@ -1,6 +1,7 @@
 import Mustache from "mustache";
 import Contact from "../models/Contact";
 import User from "../models/User";
+import Ticket from "../models/Ticket"; // Import Ticket
 
 export const greeting = (): string => {
   const greetings = ["Boa madrugada", "Bom dia", "Boa tarde", "Boa noite"];
@@ -20,16 +21,24 @@ export const firstName = (contact?: Contact): string => {
 interface FormatBodyOptions {
   contact: Contact;
   user?: User | null;
+  ticket?: Ticket | null; // Added ticket to options
 }
 
-export default (body: string, contactOrOptions: Contact | FormatBodyOptions): string => {
+export default (body: string, contactOrOptions: Contact | FormatBodyOptions | Ticket): string => {
   let contact: Contact;
   let user: User | null | undefined = null;
+  let ticket: Ticket | null | undefined = null; // Added ticket variable
 
   if (contactOrOptions && 'contact' in contactOrOptions) {
     contact = contactOrOptions.contact;
     user = contactOrOptions.user;
-  } else {
+    ticket = contactOrOptions.ticket; // Assign ticket if present
+  } else if (contactOrOptions instanceof Ticket) { // Handle Ticket directly
+    ticket = contactOrOptions;
+    contact = ticket.contact;
+    user = ticket.user;
+  }
+  else {
     contact = contactOrOptions as Contact;
   }
 
@@ -68,10 +77,10 @@ export default (body: string, contactOrOptions: Contact | FormatBodyOptions): st
     ms,
     protocol,
     hora,
-    atendente: user?.name || "",
-    attendant: user?.name || "",
-    user: user?.name || "",
-    userName: user?.name || ""
+    atendente: user?.name || "", // Use user?.name for attendant
+    attendant: user?.name || "", // Use user?.name for attendant
+    user: user?.name || "",     // Use user?.name for user
+    userName: user?.name || ""  // Use user?.name for userName
   };
   return Mustache.render(body, view);
 };
