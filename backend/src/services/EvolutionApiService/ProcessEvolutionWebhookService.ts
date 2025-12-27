@@ -4,6 +4,8 @@ import axios from "axios";
 import Message from "../../models/Message";
 import Whatsapp from "../../models/Whatsapp";
 import Queue from "../../models/Queue";
+import User from "../../models/User";
+import Contact from "../../models/Contact";
 import ApiIntegration from "../../models/ApiIntegration";
 import Setting from "../../models/Setting";
 import CreateOrUpdateContactService from "../ContactServices/CreateOrUpdateContactService";
@@ -495,6 +497,16 @@ const ProcessEvolutionWebhookService = async (
       companyId,
       undefined
     );
+
+    // Recarregar ticket com todos os relacionamentos incluindo user
+    await ticket.reload({
+      include: [
+        { model: Contact, as: "contact" },
+        { model: User, as: "user" },
+        { model: Whatsapp, as: "whatsapp" },
+        { model: Queue, as: "queue" }
+      ]
+    });
 
     // Extrair corpo da mensagem e processar mídia
     let body = "";

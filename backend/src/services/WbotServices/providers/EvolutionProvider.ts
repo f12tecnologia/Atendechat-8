@@ -81,10 +81,12 @@ class EvolutionProvider implements WhatsAppProvider {
         ]
       });
 
+      logger.info(`[EvolutionProvider] Ticket user AFTER reload: ${ticket.user?.name || 'STILL NO USER'}`);
+
       // Log detalhado para debug
       logger.info(`[EvolutionProvider] sendText called for ticket ${ticket.id}`);
       logger.info(`[EvolutionProvider] Ticket whatsapp details: id=${ticket.whatsapp?.id}, name=${ticket.whatsapp?.name}, apiIntegrationId=${ticket.whatsapp?.apiIntegrationId}`);
-      logger.info(`[EvolutionProvider] Ticket user: ${ticket.user?.name || 'NO USER'}`);
+      logger.info(`[EvolutionProvider] Ticket user BEFORE reload: ${ticket.user?.name || 'NO USER'}`);
       
       // Buscar integração Evolution API
       const apiIntegration = await ApiIntegration.findByPk(ticket.whatsapp.apiIntegrationId);
