@@ -152,6 +152,10 @@ const SendWhatsAppMedia = async ({
     // Build message body
     const messageBody = caption || media.originalname || `[${mediaType}]`;
 
+    // Get media URL - use /public/ path for frontend access
+    const mediaFileName = path.basename(media.path);
+    const mediaUrl = `/public/${mediaFileName}`;
+
     // Save message to database
     await CreateMessageService({
       messageData: {
@@ -162,6 +166,7 @@ const SendWhatsAppMedia = async ({
         fromMe: true,
         read: true,
         mediaType,
+        mediaUrl,
         ack: 2,
         queueId: ticket.queueId
       },

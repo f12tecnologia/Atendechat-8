@@ -41,6 +41,7 @@ Atendechat is built with a decoupled frontend and backend architecture.
 - **Security**: JWT for authentication. SSL enabled for external PostgreSQL connections.
 
 ## Recent Changes
+- **Dec 27, 2025**: Fixed media messages not showing images - added mediaUrl field to CreateMessageService call in SendWhatsAppMedia.ts for Evolution provider. Previously mediaUrl was missing, causing images to display as text only.
 - **Dec 27, 2025**: Fixed "undefined:" prefix in message body when signMessage is enabled but user.name is not loaded. Added null check in MessageInputCustom to only add signature when both signMessage is true AND user.name is available.
 - **Dec 27, 2025**: Added connectionType field to WhatsApp model (baileys/cloudapi/evolution) with migration. Updated Mustache.ts template helper to support attendant/user variables ({{atendente}}, {{user}}, {{userName}}, {{attendant}}). Enhanced CreateEvolutionWhatsAppService with automatic webhook configuration per connection type and auto-CONNECTED status for Cloud API. Updated frontend modal with connection type selector.
 - **Dec 26, 2025**: Improved Evolution API error handling - now shows clear message "Instância não encontrada na Evolution API" when instance doesn't exist (404). Added warning logs for non-standard instanceName formats (recommended format: 55+DDD+number). Added new endpoints for listing, syncing, and deleting Evolution instances.
