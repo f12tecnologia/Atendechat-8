@@ -430,6 +430,9 @@ const MessagesList = ({ ticket, ticketId, isGroup }) => {
   };
 
   const checkMessageMedia = (message) => {
+    if (!message.mediaUrl && !message.mediaType) {
+      return null;
+    }
 
     if (message.mediaType === "locationMessage" && message.body.split('|').length >= 2) {
       let locationParts = message.body.split('|')
@@ -443,50 +446,23 @@ const MessagesList = ({ ticket, ticketId, isGroup }) => {
 
       return <LocationPreview image={imageLocation} link={linkLocation} description={descriptionLocation} />
     }
-    /* else if (message.mediaType === "vcard") {
-      let array = message.body.split("\n");
-      let obj = [];
-      let contact = "";
-      for (let index = 0; index < array.length; index++) {
-        const v = array[index];
-        let values = v.split(":");
-        for (let ind = 0; ind < values.length; ind++) {
-          if (values[ind].indexOf("+") !== -1) {
-            obj.push({ number: values[ind] });
-          }
-          if (values[ind].indexOf("FN") !== -1) {
-            contact = values[ind + 1];
-          }
-        }
-      }
-      return <VcardPreview contact={contact} numbers={obj[0].number} />
-    } */
-    /*else if (message.mediaType === "multi_vcard") {
-      console.log("multi_vcard")
-      console.log(message)
-        
-      if(message.body !== null && message.body !== "") {
-        let newBody = JSON.parse(message.body)
-        return (
-          <>
-            {
-            newBody.map(v => (
-              <VcardPreview contact={v.name} numbers={v.number} />
-            ))
-            }
-          </>
-        )
-      } else return (<></>)
-    }*/
-    else if (message.mediaType === "image") {
+    
+    // Verificar se é imagem (suporta vários tipos MIME)
+    if (message.mediaType === "image" || (message.mediaUrl && message.mediaUrl.match(/\.(jpg|jpeg|png|gif|webp)$/i))) {
       return <ModalImageCors imageUrl={message.mediaUrl} />;
-    } else if (message.mediaType === "audio") {
+    } 
+    
+    // Verificar se é áudio
+    if (message.mediaType === "audio" || (message.mediaUrl && message.mediaUrl.match(/\.(mp3|ogg|oga|wav|m4a)$/i))) {
       return (
         <audio controls>
           <source src={message.mediaUrl} type="audio/ogg"></source>
         </audio>
       );
-    } else if (message.mediaType === "video") {
+    } 
+    
+    // Verificar se é vídeo
+    if (message.mediaType === "video" || (message.mediaUrl && message.mediaUrl.match(/\.(mp4|avi|mov|webm)$/i))) {
       return (
         <video
           className={classes.messageMedia}
@@ -494,7 +470,10 @@ const MessagesList = ({ ticket, ticketId, isGroup }) => {
           controls
         />
       );
-    } else {
+    } 
+    
+    // Para documentos e outros tipos de arquivo
+    if (message.mediaUrl) {
       return (
         <>
           <div className={classes.downloadMedia}>
@@ -514,6 +493,8 @@ const MessagesList = ({ ticket, ticketId, isGroup }) => {
         </>
       );
     }
+
+    return null;
   };
 
   const renderMessageAck = (message) => {
@@ -747,14 +728,12 @@ const MessagesList = ({ ticket, ticketId, isGroup }) => {
                   </div>
                 )}
 
-                {(message.mediaUrl || message.mediaType === "locationMessage" || message.mediaType === "vcard"
-                  //|| message.mediaType === "multi_vcard" 
-                ) && checkMessageMedia(message)}
+                {checkMessageMedia(message)}
                 <div className={classes.textContentItem}>
                   {message.quotedMsg && renderQuotedMessage(message)}
-                  <MarkdownWrapper>{message.mediaType === "locationMessage" ? null : message.body}</MarkdownWrapper>
+                  <MarkdownWrapper>{message.mediaType === "locationMessage" || !message.body ? null : message.body}</MarkdownWrapper>
                   <span className={classes.timestamp}>
-                                    {message.isEdited && <span>Editada </span>}
+                    {message.isEdited && <span>Editada </span>}
                     {format(parseISO(message.createdAt), "HH:mm")}
                   </span>
                 </div>
@@ -778,13 +757,11 @@ const MessagesList = ({ ticket, ticketId, isGroup }) => {
                 >
                   <ExpandMore />
                 </IconButton>
-                {(message.mediaUrl || message.mediaType === "locationMessage" || message.mediaType === "vcard"
-                  //|| message.mediaType === "multi_vcard" 
-                ) && checkMessageMedia(message)}
+                {checkMessageMedia(message)}
                 <div
                   className={clsx(classes.textContentItem, {
                     [classes.textContentItemDeleted]: message.isDeleted,
-                                        [classes.textContentItemEdited]: message.isEdited,
+                    [classes.textContentItemEdited]: message.isEdited,
                   })}
                 >
                   {message.isDeleted && (
@@ -795,9 +772,9 @@ const MessagesList = ({ ticket, ticketId, isGroup }) => {
                     />
                   )}
                   {message.quotedMsg && renderQuotedMessage(message)}
-                  <MarkdownWrapper>{message.mediaType === "locationMessage" ? null : message.body}</MarkdownWrapper>
+                  <MarkdownWrapper>{message.mediaType === "locationMessage" || !message.body ? null : message.body}</MarkdownWrapper>
                   <span className={classes.timestamp}>
-                                    {message.isEdited && <span>{i18n.t("messagesList.edited")}</span>}
+                    {message.isEdited && <span>{i18n.t("messagesList.edited")}</span>}
                     {format(parseISO(message.createdAt), "HH:mm")}
                     {renderMessageAck(message)}
                   </span>
