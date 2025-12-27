@@ -71,7 +71,7 @@ const TransferTicketModalCustom = ({ modalOpen, onClose, ticketid }) => {
         setSelectedWhatsapp(whatsappId)
       }
 
-      if (user.queues.length === 1) {
+      if ((user.queues || []).length === 1) {
         setSelectedQueue(user.queues[0].id)
       }
       fetchContacts();

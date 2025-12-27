@@ -8,7 +8,7 @@ import DialogActions from "@material-ui/core/DialogActions";
 import DialogContent from "@material-ui/core/DialogContent";
 import DialogTitle from "@material-ui/core/DialogTitle";
 import Autocomplete, {
-	createFilterOptions,
+        createFilterOptions,
 } from "@material-ui/lab/Autocomplete";
 import CircularProgress from "@material-ui/core/CircularProgress";
 
@@ -57,8 +57,8 @@ const NewTicketModal = ({ modalOpen, onClose, initialContact }) => {
   const { companyId, whatsappId } = user;
 
   const [ openAlert, setOpenAlert ] = useState(false);
-	const [ userTicketOpen, setUserTicketOpen] = useState("");
-	const [ queueTicketOpen, setQueueTicketOpen] = useState("");
+        const [ userTicketOpen, setUserTicketOpen] = useState("");
+        const [ queueTicketOpen, setQueueTicketOpen] = useState("");
 
   useEffect(() => {
     if (initialContact?.id !== undefined) {
@@ -84,9 +84,9 @@ const NewTicketModal = ({ modalOpen, onClose, initialContact }) => {
 
         if( user.profile !== "admin" ){
 
-          setQueues( user.queues );
+          setQueues( user.queues || [] );
           
-          if (user.queues.length === 1) {
+          if ((user.queues || []).length === 1) {
             setSelectedQueue(user.queues[0].id)
           }
 
@@ -439,7 +439,7 @@ const NewTicketModal = ({ modalOpen, onClose, initialContact }) => {
           handleClose={handleCloseAlert}
           user={userTicketOpen}
           queue={queueTicketOpen}
-			  /> */}
+                          /> */}
       </Dialog >
     </>
   );
