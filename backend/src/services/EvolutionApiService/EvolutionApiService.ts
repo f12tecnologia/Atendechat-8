@@ -13,6 +13,10 @@ interface CreateInstanceRequest {
   qrcode?: boolean;
   webhookUrl?: string;
   webhookEvents?: string[];
+  integration?: "WHATSAPP-BAILEYS" | "WHATSAPP-BUSINESS";
+  token?: string;
+  number?: string;
+  businessId?: string;
 }
 
 interface SendTextMessageRequest {
@@ -65,11 +69,19 @@ class EvolutionApiService {
 
   async createInstance(data: CreateInstanceRequest): Promise<any> {
     try {
+      const isCloudApi = data.integration === "WHATSAPP-BUSINESS";
+      
       const payload: any = {
         instanceName: data.instanceName,
-        qrcode: data.qrcode !== false,
-        integration: "WHATSAPP-BAILEYS"
+        qrcode: isCloudApi ? false : (data.qrcode !== false),
+        integration: data.integration || "WHATSAPP-BAILEYS"
       };
+
+      if (isCloudApi) {
+        payload.token = data.token;
+        payload.number = data.number;
+        payload.businessId = data.businessId;
+      }
 
       if (data.webhookUrl) {
         payload.webhook = {
@@ -87,7 +99,13 @@ class EvolutionApiService {
         };
       }
 
-      logger.info(`Evolution API - Creating instance: ${data.instanceName}`, { payload });
+      logger.info(`Evolution API - Creating instance: ${data.instanceName} (type: ${payload.integration})`, { 
+        instanceName: data.instanceName,
+        integration: payload.integration,
+        hasToken: !!data.token,
+        hasNumber: !!data.number,
+        hasBusinessId: !!data.businessId
+      });
       const response = await this.client.post("/instance/create", payload);
       logger.info(`Evolution API - Instance created: ${data.instanceName}`);
       return response.data;

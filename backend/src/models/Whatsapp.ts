@@ -167,6 +167,18 @@ class Whatsapp extends Model<Whatsapp> {
 
   @BelongsTo(() => ApiIntegration)
   apiIntegration: ApiIntegration;
+
+  @AllowNull
+  @Column(DataType.TEXT)
+  cloudApiToken: string;
+
+  @AllowNull
+  @Column(DataType.STRING)
+  cloudApiNumberId: string;
+
+  @AllowNull
+  @Column(DataType.STRING)
+  cloudApiBusinessId: string;
 }
 
 export default Whatsapp;

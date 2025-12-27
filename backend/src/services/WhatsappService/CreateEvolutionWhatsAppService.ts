@@ -16,6 +16,9 @@ interface Request {
   ratingMessage?: string;
   isDefault?: boolean;
   connectionType?: "baileys" | "cloudapi" | "evolution";
+  cloudApiToken?: string;
+  cloudApiNumberId?: string;
+  cloudApiBusinessId?: string;
 }
 
 interface Response {
@@ -82,7 +85,10 @@ const CreateEvolutionWhatsAppService = async ({
   outOfHoursMessage = "",
   ratingMessage = "",
   isDefault = false,
-  connectionType = "evolution"
+  connectionType = "evolution",
+  cloudApiToken,
+  cloudApiNumberId,
+  cloudApiBusinessId
 }: Request): Promise<Response> => {
   
   const apiIntegration = await ApiIntegration.findOne({
@@ -96,6 +102,12 @@ const CreateEvolutionWhatsAppService = async ({
 
   if (!apiIntegration) {
     throw new AppError("ERR_NO_EVOLUTION_INTEGRATION_FOUND", 404);
+  }
+
+  if (connectionType === "cloudapi") {
+    if (!cloudApiToken || !cloudApiNumberId || !cloudApiBusinessId) {
+      throw new AppError("ERR_CLOUDAPI_MISSING_CREDENTIALS", 400);
+    }
   }
 
   const instanceName = name.toLowerCase().replace(/[^a-z0-9]/g, "_");
@@ -140,12 +152,25 @@ const CreateEvolutionWhatsAppService = async ({
   try {
     if (!instanceExists) {
       logger.info(`Evolution API - Creating instance: ${instanceName} (type: ${connectionType})`);
-      await evolutionService.createInstance({
+      
+      const createInstanceParams: any = {
         instanceName,
         qrcode: connectionType !== "cloudapi",
         webhookUrl,
         webhookEvents
-      });
+      };
+
+      if (connectionType === "cloudapi") {
+        createInstanceParams.integration = "WHATSAPP-BUSINESS";
+        createInstanceParams.token = cloudApiToken;
+        createInstanceParams.number = cloudApiNumberId;
+        createInstanceParams.businessId = cloudApiBusinessId;
+        logger.info(`Cloud API params: token=${cloudApiToken ? "***" : "missing"}, number=${cloudApiNumberId}, businessId=${cloudApiBusinessId}`);
+      } else {
+        createInstanceParams.integration = "WHATSAPP-BAILEYS";
+      }
+
+      await evolutionService.createInstance(createInstanceParams);
       logger.info(`Evolution instance created: ${instanceName}`);
       await new Promise(resolve => setTimeout(resolve, 2000));
     } else {
@@ -189,11 +214,19 @@ const CreateEvolutionWhatsAppService = async ({
       apiIntegrationId
     });
 
-    await whatsapp.update({
+    const updateData: any = {
       session: instanceName,
       qrcode: qrcode || "",
       connectionType
-    });
+    };
+
+    if (connectionType === "cloudapi") {
+      updateData.cloudApiToken = cloudApiToken;
+      updateData.cloudApiNumberId = cloudApiNumberId;
+      updateData.cloudApiBusinessId = cloudApiBusinessId;
+    }
+
+    await whatsapp.update(updateData);
 
     logger.info(`WhatsApp connection created: ${name} (type: ${connectionType}, status: ${initialStatus})`);
 

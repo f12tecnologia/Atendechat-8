@@ -103,6 +103,9 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
   const [createdWhatsAppId, setCreatedWhatsAppId] = useState(null);
   const createdWhatsAppIdRef = useRef(null);
   const [connectionType, setConnectionType] = useState("baileys");
+  const [cloudApiToken, setCloudApiToken] = useState("");
+  const [cloudApiNumberId, setCloudApiNumberId] = useState("");
+  const [cloudApiBusinessId, setCloudApiBusinessId] = useState("");
   
     useEffect(() => {
       const fetchSession = async () => {
@@ -221,10 +224,21 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
           toast.error("Selecione uma integração Evolution API antes de continuar");
           return;
         }
+        if (connectionType === "cloudapi") {
+          if (!cloudApiToken || !cloudApiNumberId || !cloudApiBusinessId) {
+            toast.error("Preencha todos os campos obrigatórios da Cloud API (Token, Número ID e Business ID)");
+            return;
+          }
+        }
         const evolutionData = {
           ...whatsappData,
           apiIntegrationId: selectedEvolutionIntegration,
-          connectionType
+          connectionType,
+          ...(connectionType === "cloudapi" && {
+            cloudApiToken,
+            cloudApiNumberId,
+            cloudApiBusinessId
+          })
         };
         const { data } = await api.post("/whatsapp/evolution", evolutionData);
         
@@ -270,6 +284,9 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
     setProvider("evolution");
     setSelectedEvolutionIntegration(null);
     setConnectionType("baileys");
+    setCloudApiToken("");
+    setCloudApiNumberId("");
+    setCloudApiBusinessId("");
     onClose();
     setWhatsApp(initialState);
     setSelectedQueueId(null);
@@ -406,6 +423,41 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                         }
                       </FormHelperText>
                     </FormControl>
+
+                    {connectionType === "cloudapi" && (
+                      <>
+                        <TextField
+                          label="Token WhatsApp Cloud API *"
+                          placeholder="EAAxxxxxxxxxxxxxxxx"
+                          fullWidth
+                          variant="outlined"
+                          margin="dense"
+                          value={cloudApiToken}
+                          onChange={(e) => setCloudApiToken(e.target.value)}
+                          helperText="Token de acesso permanente do Meta Business Manager"
+                        />
+                        <TextField
+                          label="Número ID (Phone Number ID) *"
+                          placeholder="123456789012345"
+                          fullWidth
+                          variant="outlined"
+                          margin="dense"
+                          value={cloudApiNumberId}
+                          onChange={(e) => setCloudApiNumberId(e.target.value)}
+                          helperText="ID do número de telefone (não é o número em si)"
+                        />
+                        <TextField
+                          label="Business ID *"
+                          placeholder="987654321098765"
+                          fullWidth
+                          variant="outlined"
+                          margin="dense"
+                          value={cloudApiBusinessId}
+                          onChange={(e) => setCloudApiBusinessId(e.target.value)}
+                          helperText="WhatsApp Business Account ID"
+                        />
+                      </>
+                    )}
 
                     {qrCode && connectionType !== "cloudapi" && (
                       <div style={{ textAlign: "center", margin: "20px 0" }}>
