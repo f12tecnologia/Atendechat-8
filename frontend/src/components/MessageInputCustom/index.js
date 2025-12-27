@@ -601,8 +601,8 @@ const MessageInputCustom = (props) => {
       read: 1,
       fromMe: true,
       mediaUrl: "",
-      body: signMessage
-        ? `*${user?.name}:*\n${inputMessage.trim()}`
+      body: signMessage && user?.name
+        ? `*${user.name}:*\n${inputMessage.trim()}`
         : inputMessage.trim(),
       quotedMsg: replyingMessage,
     };
