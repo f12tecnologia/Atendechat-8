@@ -117,8 +117,9 @@ export const storeEvolution = async (req: Request, res: Response): Promise<Respo
     outOfHoursMessage,
     ratingMessage,
     queueIds,
-    apiIntegrationId
-  }: WhatsappData & { apiIntegrationId: number } = req.body;
+    apiIntegrationId,
+    connectionType
+  }: WhatsappData & { apiIntegrationId: number; connectionType?: "baileys" | "cloudapi" | "evolution" } = req.body;
   const { companyId } = req.user;
 
   const { whatsapp, qrcode, oldDefaultWhatsapp } = await CreateEvolutionWhatsAppService({
@@ -130,7 +131,8 @@ export const storeEvolution = async (req: Request, res: Response): Promise<Respo
     ratingMessage,
     queueIds,
     companyId,
-    apiIntegrationId
+    apiIntegrationId,
+    connectionType
   });
 
   const io = getIO();

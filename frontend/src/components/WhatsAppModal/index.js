@@ -102,6 +102,7 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
   const [integrationModalOpen, setIntegrationModalOpen] = useState(false);
   const [createdWhatsAppId, setCreatedWhatsAppId] = useState(null);
   const createdWhatsAppIdRef = useRef(null);
+  const [connectionType, setConnectionType] = useState("baileys");
   
     useEffect(() => {
       const fetchSession = async () => {
@@ -222,7 +223,8 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
         }
         const evolutionData = {
           ...whatsappData,
-          apiIntegrationId: selectedEvolutionIntegration
+          apiIntegrationId: selectedEvolutionIntegration,
+          connectionType
         };
         const { data } = await api.post("/whatsapp/evolution", evolutionData);
         
@@ -232,10 +234,15 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
           createdWhatsAppIdRef.current = data.whatsapp.id;
         }
         
-        if (data.qrcode) {
+        if (connectionType === "cloudapi") {
+          toast.success("Conexão Cloud API criada e conectada automaticamente!");
+          handleClose();
+        } else if (data.qrcode) {
           setQrCode(data.qrcode);
+          toast.success("Conexão Evolution API criada! Escaneie o QR Code.");
+        } else {
+          toast.success("Conexão criada! Aguarde o QR Code.");
         }
-        toast.success("Conexão Evolution API criada! Escaneie o QR Code.");
       }
     } catch (err) {
       toastError(err);
@@ -262,6 +269,7 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
     createdWhatsAppIdRef.current = null;
     setProvider("evolution");
     setSelectedEvolutionIntegration(null);
+    setConnectionType("baileys");
     onClose();
     setWhatsApp(initialState);
     setSelectedQueueId(null);
@@ -372,7 +380,34 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                       </Grid>
                     </Grid>
 
-                    {qrCode && (
+                    <FormControl margin="dense" variant="outlined" fullWidth>
+                      <InputLabel>Tipo de Conexão</InputLabel>
+                      <Select
+                        value={connectionType}
+                        onChange={(e) => setConnectionType(e.target.value)}
+                        label="Tipo de Conexão"
+                      >
+                        <MenuItem value="baileys">
+                          Baileys (QR Code - Requer scan)
+                        </MenuItem>
+                        <MenuItem value="cloudapi">
+                          Cloud API (Oficial - Conexão automática)
+                        </MenuItem>
+                        <MenuItem value="evolution">
+                          Evolution (Padrão)
+                        </MenuItem>
+                      </Select>
+                      <FormHelperText>
+                        {connectionType === "cloudapi" 
+                          ? "Cloud API: Conexão automática via API oficial do WhatsApp Business"
+                          : connectionType === "baileys"
+                          ? "Baileys: Requer escanear QR Code com o celular"
+                          : "Evolution: Modo padrão de conexão"
+                        }
+                      </FormHelperText>
+                    </FormControl>
+
+                    {qrCode && connectionType !== "cloudapi" && (
                       <div style={{ textAlign: "center", margin: "20px 0" }}>
                         <h3>QR Code Evolution API</h3>
                         <img src={qrCode} alt="QR Code" style={{ maxWidth: "300px" }} />

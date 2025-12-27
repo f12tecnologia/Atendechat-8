@@ -15,6 +15,7 @@ interface Request {
   outOfHoursMessage?: string;
   ratingMessage?: string;
   isDefault?: boolean;
+  connectionType?: "baileys" | "cloudapi" | "evolution";
 }
 
 interface Response {
@@ -22,6 +23,54 @@ interface Response {
   qrcode: string | null;
   oldDefaultWhatsapp: Whatsapp | null;
 }
+
+const getWebhookEventsForConnectionType = (connectionType: string): string[] => {
+  const baseEvents = [
+    "QRCODE_UPDATED",
+    "MESSAGES_UPSERT",
+    "MESSAGES_UPDATE",
+    "CONNECTION_UPDATE"
+  ];
+
+  if (connectionType === "cloudapi") {
+    return [
+      ...baseEvents,
+      "MESSAGES_SET",
+      "SEND_MESSAGE",
+      "MESSAGES_DELETE",
+      "PRESENCE_UPDATE",
+      "CHATS_SET",
+      "CHATS_UPSERT",
+      "CHATS_UPDATE",
+      "CHATS_DELETE",
+      "CONTACTS_SET",
+      "CONTACTS_UPSERT",
+      "CONTACTS_UPDATE"
+    ];
+  }
+
+  if (connectionType === "baileys") {
+    return [
+      ...baseEvents,
+      "MESSAGES_SET",
+      "SEND_MESSAGE",
+      "CONTACTS_SET",
+      "CONTACTS_UPSERT",
+      "CONTACTS_UPDATE",
+      "PRESENCE_UPDATE",
+      "CHATS_SET",
+      "CHATS_UPSERT",
+      "CHATS_UPDATE",
+      "CHATS_DELETE",
+      "GROUPS_UPSERT",
+      "GROUP_UPDATE",
+      "GROUP_PARTICIPANTS_UPDATE",
+      "CALL"
+    ];
+  }
+
+  return baseEvents;
+};
 
 const CreateEvolutionWhatsAppService = async ({
   name,
@@ -32,7 +81,8 @@ const CreateEvolutionWhatsAppService = async ({
   complationMessage = "",
   outOfHoursMessage = "",
   ratingMessage = "",
-  isDefault = false
+  isDefault = false,
+  connectionType = "evolution"
 }: Request): Promise<Response> => {
   
   const apiIntegration = await ApiIntegration.findOne({
@@ -84,19 +134,17 @@ const CreateEvolutionWhatsAppService = async ({
     logger.warn(`Could not check existing instances: ${(e as Error).message}`);
   }
 
+  const webhookEvents = getWebhookEventsForConnectionType(connectionType);
+  logger.info(`Using connection type: ${connectionType} with ${webhookEvents.length} webhook events`);
+
   try {
     if (!instanceExists) {
-      logger.info(`Evolution API - Creating instance: ${instanceName}`);
+      logger.info(`Evolution API - Creating instance: ${instanceName} (type: ${connectionType})`);
       await evolutionService.createInstance({
         instanceName,
-        qrcode: true,
+        qrcode: connectionType !== "cloudapi",
         webhookUrl,
-        webhookEvents: [
-          "QRCODE_UPDATED",
-          "MESSAGES_UPSERT",
-          "MESSAGES_UPDATE",
-          "CONNECTION_UPDATE"
-        ]
+        webhookEvents
       });
       logger.info(`Evolution instance created: ${instanceName}`);
       await new Promise(resolve => setTimeout(resolve, 2000));
@@ -104,28 +152,32 @@ const CreateEvolutionWhatsAppService = async ({
       logger.info(`Evolution instance already exists: ${instanceName}`);
     }
 
-    try {
-      logger.info(`Getting QR code via connect endpoint...`);
-      const connectResponse = await evolutionService.connectInstance(instanceName);
-      
-      if (connectResponse) {
-        qrcode = connectResponse.base64 || 
-                 connectResponse.qrcode?.base64 || 
-                 connectResponse.code || 
-                 connectResponse.qrcode?.code || 
-                 null;
+    if (connectionType !== "cloudapi") {
+      try {
+        logger.info(`Getting QR code via connect endpoint...`);
+        const connectResponse = await evolutionService.connectInstance(instanceName);
         
-        if (qrcode) {
-          logger.info(`QR code obtained successfully`);
+        if (connectResponse) {
+          qrcode = connectResponse.base64 || 
+                   connectResponse.qrcode?.base64 || 
+                   connectResponse.code || 
+                   connectResponse.qrcode?.code || 
+                   null;
+          
+          if (qrcode) {
+            logger.info(`QR code obtained successfully`);
+          }
         }
+      } catch (connectError: any) {
+        logger.warn(`Error getting QR code: ${connectError.message}`);
       }
-    } catch (connectError: any) {
-      logger.warn(`Error getting QR code: ${connectError.message}`);
     }
+
+    const initialStatus = connectionType === "cloudapi" ? "CONNECTED" : "PENDING";
 
     const { whatsapp, oldDefaultWhatsapp } = await CreateWhatsAppService({
       name,
-      status: "PENDING",
+      status: initialStatus,
       queueIds,
       greetingMessage,
       complationMessage,
@@ -139,10 +191,11 @@ const CreateEvolutionWhatsAppService = async ({
 
     await whatsapp.update({
       session: instanceName,
-      qrcode: qrcode || ""
+      qrcode: qrcode || "",
+      connectionType
     });
 
-    logger.info(`WhatsApp connection created: ${name}`);
+    logger.info(`WhatsApp connection created: ${name} (type: ${connectionType}, status: ${initialStatus})`);
 
     return {
       whatsapp,

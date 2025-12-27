@@ -77,6 +77,10 @@ class Whatsapp extends Model<Whatsapp> {
   @Column({ defaultValue: "stable" })
   provider: string;
 
+  @Default("evolution")
+  @Column(DataType.STRING)
+  connectionType: string;
+
   @Default(false)
   @AllowNull
   @Column

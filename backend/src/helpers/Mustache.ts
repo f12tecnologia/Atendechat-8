@@ -1,5 +1,6 @@
 import Mustache from "mustache";
 import Contact from "../models/Contact";
+import User from "../models/User";
 
 export const greeting = (): string => {
   const greetings = ["Boa madrugada", "Bom dia", "Boa tarde", "Boa noite"];
@@ -16,7 +17,22 @@ export const firstName = (contact?: Contact): string => {
   return '';
 };
 
-export default (body: string, contact: Contact): string => {
+interface FormatBodyOptions {
+  contact: Contact;
+  user?: User | null;
+}
+
+export default (body: string, contactOrOptions: Contact | FormatBodyOptions): string => {
+  let contact: Contact;
+  let user: User | null | undefined = null;
+
+  if (contactOrOptions && 'contact' in contactOrOptions) {
+    contact = contactOrOptions.contact;
+    user = contactOrOptions.user;
+  } else {
+    contact = contactOrOptions as Contact;
+  }
+
   let ms = "";
 
   const Hr = new Date();
@@ -51,7 +67,11 @@ export default (body: string, contact: Contact): string => {
     gretting: greeting(),
     ms,
     protocol,
-    hora
+    hora,
+    atendente: user?.name || "",
+    attendant: user?.name || "",
+    user: user?.name || "",
+    userName: user?.name || ""
   };
   return Mustache.render(body, view);
 };
