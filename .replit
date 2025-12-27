@@ -16,10 +16,6 @@ localPort = 5000
 externalPort = 80
 
 [[ports]]
-localPort = 5001
-externalPort = 3001
-
-[[ports]]
 localPort = 6379
 externalPort = 3000
 
@@ -45,23 +41,11 @@ args = "cd frontend && PORT=3000 BROWSER=none npm start"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Production"
+args = "Redis"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Redis"
-
-[[workflows.workflow]]
-name = "Production"
-author = "agent"
-
-[workflows.workflow.metadata]
-outputType = "webview"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "cd /home/runner/workspace/backend && PORT=5000 node dist/server.js"
-waitForPort = 5000
+args = "Production"
 
 [[workflows.workflow]]
 name = "Redis"
@@ -73,6 +57,18 @@ args = "redis-server --protected-mode no"
 
 [workflows.workflow.metadata]
 outputType = "console"
+
+[[workflows.workflow]]
+name = "Production"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd /home/runner/workspace/backend && PORT=5000 node dist/server.js"
+waitForPort = 5000
+
+[workflows.workflow.metadata]
+outputType = "webview"
 
 # Configuração de Deployment
 [deployment]
