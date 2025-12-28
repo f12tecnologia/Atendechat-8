@@ -191,7 +191,7 @@ const useStyles = makeStyles((theme) => ({
     overflowWrap: "break-word",
     padding: "3px 80px 6px 6px",
   },
-  
+
   textContentItemEdited: {
     overflowWrap: "break-word",
     padding: "3px 120px 6px 6px",
@@ -446,33 +446,19 @@ const MessagesList = ({ ticket, ticketId, isGroup }) => {
 
       return <LocationPreview image={imageLocation} link={linkLocation} description={descriptionLocation} />
     }
-    
-    // Verificar se é imagem (suporta vários tipos MIME)
-    if (message.mediaType === "image" || (message.mediaUrl && message.mediaUrl.match(/\.(jpg|jpeg|png|gif|webp)$/i))) {
-      // Normalizar URL da imagem - aceita tanto /public/file.jpg quanto file.jpg
+
+    // Para imagens
+    if (message.mediaType === "image" || message.mediaType?.startsWith('image/')) {
+      // Normalizar URL da imagem
       let imageUrl = message.mediaUrl;
       if (!imageUrl.startsWith('/public/') && !imageUrl.startsWith('http')) {
         imageUrl = `/public/${imageUrl}`;
       }
       return <ModalImageCors imageUrl={imageUrl} />;
-    } 
-    
-    // Verificar se é áudio
-    if (message.mediaType === "audio" || (message.mediaUrl && message.mediaUrl.match(/\.(mp3|ogg|oga|wav|m4a)$/i))) {
-      // Normalizar URL do áudio
-      let audioUrl = message.mediaUrl;
-      if (!audioUrl.startsWith('/public/') && !audioUrl.startsWith('http')) {
-        audioUrl = `/public/${audioUrl}`;
-      }
-      return (
-        <audio controls>
-          <source src={audioUrl} type="audio/ogg"></source>
-        </audio>
-      );
-    } 
-    
-    // Verificar se é vídeo
-    if (message.mediaType === "video" || (message.mediaUrl && message.mediaUrl.match(/\.(mp4|avi|mov|webm)$/i))) {
+    }
+
+    // Para vídeos
+    if (message.mediaType === "video" || message.mediaType?.startsWith('video/')) {
       // Normalizar URL do vídeo
       let videoUrl = message.mediaUrl;
       if (!videoUrl.startsWith('/public/') && !videoUrl.startsWith('http')) {
@@ -483,26 +469,133 @@ const MessagesList = ({ ticket, ticketId, isGroup }) => {
           className={classes.messageMedia}
           src={videoUrl}
           controls
+          style={{ maxWidth: '100%', maxHeight: '400px' }}
         />
       );
-    } 
-    
-    // Para documentos e outros tipos de arquivo
-    if (message.mediaUrl) {
-      // Normalizar URL do documento
-      let documentUrl = message.mediaUrl;
-      if (!documentUrl.startsWith('/public/') && !documentUrl.startsWith('http')) {
-        documentUrl = `/public/${documentUrl}`;
+    }
+
+    // Para áudios
+    if (message.mediaType === "audio" || message.mediaType === "ptt" || message.mediaType?.startsWith('audio/')) {
+      // Normalizar URL do áudio
+      let audioUrl = message.mediaUrl;
+      if (!audioUrl.startsWith('/public/') && !audioUrl.startsWith('http')) {
+        audioUrl = `/public/${audioUrl}`;
+      }
+      return (
+        <audio
+          controls
+          style={{ width: '100%', maxWidth: '300px' }}
+        >
+          <source src={audioUrl} type={message.mediaType || 'audio/ogg'} />
+          Seu navegador não suporta o elemento de áudio.
+        </audio>
+      );
+    }
+
+    // Para PDFs - exibir visualização inline
+    if (message.mediaType === "application/pdf" || message.mediaUrl?.toLowerCase().endsWith('.pdf')) {
+      let pdfUrl = message.mediaUrl;
+      if (!pdfUrl.startsWith('/public/') && !pdfUrl.startsWith('http')) {
+        pdfUrl = `/public/${pdfUrl}`;
       }
       return (
         <>
+          <div style={{ width: '100%', height: '400px', marginBottom: '8px' }}>
+            <iframe
+              src={pdfUrl}
+              style={{ width: '100%', height: '100%', border: 'none' }}
+              title="PDF Viewer"
+            />
+          </div>
           <div className={classes.downloadMedia}>
             <Button
               startIcon={<GetApp />}
               color="primary"
               variant="outlined"
               target="_blank"
+              href={pdfUrl}
+              download
+            >
+              {i18n.t("messagesList.header.buttons.download")}
+            </Button>
+          </div>
+          <div style={{marginBottom: message.body === "" ? 8 : 0}}>
+            <Divider />
+          </div>
+        </>
+      );
+    }
+
+    // Para documentos do Office (Word, Excel, PowerPoint)
+    if (message.mediaType?.includes('officedocument') || 
+        message.mediaType?.includes('msword') ||
+        message.mediaType?.includes('ms-excel') ||
+        message.mediaType?.includes('ms-powerpoint') ||
+        message.mediaUrl?.match(/\.(doc|docx|xls|xlsx|ppt|pptx)$/i)) {
+      let docUrl = message.mediaUrl;
+      if (!docUrl.startsWith('/public/') && !docUrl.startsWith('http')) {
+        docUrl = `/public/${docUrl}`;
+      }
+
+      // Usar visualizador do Office Online
+      const fullUrl = window.location.origin + docUrl;
+      const officeViewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fullUrl)}`;
+
+      return (
+        <>
+          <div style={{ width: '100%', height: '400px', marginBottom: '8px' }}>
+            <iframe
+              src={officeViewerUrl}
+              style={{ width: '100%', height: '100%', border: 'none' }}
+              title="Office Document Viewer"
+            />
+          </div>
+          <div className={classes.downloadMedia}>
+            <Button
+              startIcon={<GetApp />}
+              color="primary"
+              variant="outlined"
+              target="_blank"
+              href={docUrl}
+              download
+            >
+              {i18n.t("messagesList.header.buttons.download")}
+            </Button>
+          </div>
+          <div style={{marginBottom: message.body === "" ? 8 : 0}}>
+            <Divider />
+          </div>
+        </>
+      );
+    }
+
+    // Para outros tipos de arquivos (ZIP, RAR, TXT, etc)
+    if (message.mediaUrl) {
+      // Normalizar URL do documento
+      let documentUrl = message.mediaUrl;
+      if (!documentUrl.startsWith('/public/') && !documentUrl.startsWith('http')) {
+        documentUrl = `/public/${documentUrl}`;
+      }
+
+      // Extrair nome e extensão do arquivo
+      const fileName = message.body || documentUrl.split('/').pop() || 'arquivo';
+      const fileExtension = fileName.split('.').pop()?.toUpperCase() || 'FILE';
+
+      return (
+        <>
+          <div className={classes.downloadMedia} style={{ padding: '16px', textAlign: 'center' }}>
+            <div style={{ marginBottom: '12px', fontSize: '14px', color: '#666' }}>
+              <strong>{fileName}</strong>
+              <br />
+              <span style={{ fontSize: '12px' }}>Tipo: {fileExtension}</span>
+            </div>
+            <Button
+              startIcon={<GetApp />}
+              color="primary"
+              variant="contained"
+              target="_blank"
               href={documentUrl}
+              download
             >
               {i18n.t("messagesList.header.buttons.download")}
             </Button>
@@ -703,7 +796,7 @@ const MessagesList = ({ ticket, ticketId, isGroup }) => {
                 )}
                 <div>
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 17" width="20" height="17">
-                    <path fill="#df3333" d="M18.2 12.1c-1.5-1.8-5-2.7-8.2-2.7s-6.7 1-8.2 2.7c-.7.8-.3 2.3.2 2.8.2.2.3.3.5.3 1.4 0 3.6-.7 3.6-.7.5-.2.8-.5.8-1v-1.3c.7-1.2 5.4-1.2 6.4-.1l.1.1v1.3c0 .2.1.4.2.6.1.2.3.3.5.4 0 0 2.2.7 3.6.7.2 0 1.4-2 .5-3.1zM5.4 3.2l4.7 4.6 5.8-5.7-.9-.8L10.1 6 6.4 2.3h2.5V1H4.1v4.8h1.3V3.2z"></path>
+                    <path fill="#df3333" d="M18.2 12.1c-1.5-1.8-5-2.7-8.2-2.7s-6.7 1-8.2 2.7c-.7.8-.3 2.3.2 2.8.2.2.3.3.5.3 1.4 0 3.6-.7 3.6-.7.5-.2.8-.5.8-1v-1.3c.7-1.2 5.4-1.2 6.4-.1l.1.1v1.3c0 .2.1.4.2.6.1.2.3.5.4 0 0 2.2.7 3.6.7.2 0 1.4-2 .5-3.1zM5.4 3.2l4.7 4.6 5.8-5.7-.9-.8L10.1 6 6.4 2.3h2.5V1H4.1v4.8h1.3V3.2z"></path>
                   </svg> <span>{i18n.t("messagesList.lostCall")} {format(parseISO(message.createdAt), "HH:mm")}</span>
                 </div>
               </div>
