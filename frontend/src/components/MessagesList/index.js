@@ -457,14 +457,24 @@ const MessagesList = ({ ticket, ticketId, isGroup }) => {
       return `/public/${cleanUrl}`;
     };
 
+    // Verificar extensão do arquivo para determinar tipo
+    const fileExtension = message.mediaUrl?.split('.').pop()?.toLowerCase();
+    const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'];
+    const videoExtensions = ['mp4', 'webm', 'ogg', 'avi', 'mov', 'wmv'];
+    const audioExtensions = ['mp3', 'wav', 'ogg', 'oga', 'm4a', 'aac'];
+
     // Para imagens
-    if (message.mediaType === "image" || message.mediaType?.startsWith('image/')) {
+    if (message.mediaType === "image" || 
+        message.mediaType?.startsWith('image/') || 
+        (fileExtension && imageExtensions.includes(fileExtension))) {
       const imageUrl = normalizeUrl(message.mediaUrl);
       return <ModalImageCors imageUrl={imageUrl} />;
     }
 
     // Para vídeos
-    if (message.mediaType === "video" || message.mediaType?.startsWith('video/')) {
+    if (message.mediaType === "video" || 
+        message.mediaType?.startsWith('video/') ||
+        (fileExtension && videoExtensions.includes(fileExtension))) {
       const videoUrl = normalizeUrl(message.mediaUrl);
       return (
         <video
@@ -477,7 +487,10 @@ const MessagesList = ({ ticket, ticketId, isGroup }) => {
     }
 
     // Para áudios
-    if (message.mediaType === "audio" || message.mediaType === "ptt" || message.mediaType?.startsWith('audio/')) {
+    if (message.mediaType === "audio" || 
+        message.mediaType === "ptt" || 
+        message.mediaType?.startsWith('audio/') ||
+        (fileExtension && audioExtensions.includes(fileExtension))) {
       const audioUrl = normalizeUrl(message.mediaUrl);
       return (
         <audio
@@ -493,6 +506,19 @@ const MessagesList = ({ ticket, ticketId, isGroup }) => {
     // Para PDFs
     if (message.mediaType === "application/pdf" || message.mediaUrl?.toLowerCase().endsWith('.pdf')) {
       const pdfUrl = normalizeUrl(message.mediaUrl);
+      const fileName = pdfUrl.split('/').pop() || 'documento.pdf';
+      
+      const handleDownload = (e) => {
+        e.preventDefault();
+        const link = document.createElement('a');
+        link.href = pdfUrl;
+        link.download = fileName;
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      };
+
       return (
         <>
           <div style={{ width: '100%', height: '400px', marginBottom: '8px' }}>
@@ -507,9 +533,7 @@ const MessagesList = ({ ticket, ticketId, isGroup }) => {
               startIcon={<GetApp />}
               color="primary"
               variant="outlined"
-              target="_blank"
-              href={pdfUrl}
-              download
+              onClick={handleDownload}
             >
               {i18n.t("messagesList.header.buttons.download")}
             </Button>
@@ -530,6 +554,18 @@ const MessagesList = ({ ticket, ticketId, isGroup }) => {
       const docUrl = normalizeUrl(message.mediaUrl);
       const fullUrl = window.location.origin + docUrl;
       const officeViewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fullUrl)}`;
+      const fileName = docUrl.split('/').pop() || 'documento';
+
+      const handleDownload = (e) => {
+        e.preventDefault();
+        const link = document.createElement('a');
+        link.href = docUrl;
+        link.download = fileName;
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      };
 
       return (
         <>
@@ -545,9 +581,7 @@ const MessagesList = ({ ticket, ticketId, isGroup }) => {
               startIcon={<GetApp />}
               color="primary"
               variant="outlined"
-              target="_blank"
-              href={docUrl}
-              download
+              onClick={handleDownload}
             >
               {i18n.t("messagesList.header.buttons.download")}
             </Button>
@@ -565,6 +599,17 @@ const MessagesList = ({ ticket, ticketId, isGroup }) => {
       const fileName = documentUrl.split('/').pop() || 'arquivo';
       const fileExtension = fileName.split('.').pop()?.toUpperCase() || 'FILE';
 
+      const handleDownload = (e) => {
+        e.preventDefault();
+        const link = document.createElement('a');
+        link.href = documentUrl;
+        link.download = fileName;
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      };
+
       return (
         <>
           <div className={classes.downloadMedia} style={{ padding: '16px', textAlign: 'center' }}>
@@ -577,9 +622,7 @@ const MessagesList = ({ ticket, ticketId, isGroup }) => {
               startIcon={<GetApp />}
               color="primary"
               variant="contained"
-              target="_blank"
-              href={documentUrl}
-              download
+              onClick={handleDownload}
             >
               {i18n.t("messagesList.header.buttons.download")}
             </Button>
