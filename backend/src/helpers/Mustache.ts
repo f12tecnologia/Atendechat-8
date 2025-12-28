@@ -3,10 +3,16 @@ import Contact from "../models/Contact";
 import User from "../models/User";
 
 export const greeting = (): string => {
-  const greetings = ["Boa madrugada", "Bom dia", "Boa tarde", "Boa noite"];
+  const greetings = ["Bom dia", "Boa tarde", "Boa noite"];
   const h = new Date().getHours();
   // eslint-disable-next-line no-bitwise
-  return greetings[(h / 6) >> 0];
+  if (h >= 6 && h < 12) {
+    return "Bom dia";
+  } else if (h >= 12 && h < 18) {
+    return "Boa tarde";
+  } else {
+    return "Boa noite";
+  }
 };
 
 export const firstName = (contact?: Contact): string => {
@@ -59,9 +65,7 @@ export default (body: string, contactOrOptions: Contact | FormatBodyOptions): st
   if (hh > 17) {
     ms = "Boa noite";
   }
-  if (hh > 23 || hh < 6) {
-    ms = "Boa madrugada";
-  }
+  // Removed "Boa madrugada" condition
 
   const protocol = yy + mm + dd + String(hh) + min + ss;
 
