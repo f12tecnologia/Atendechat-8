@@ -250,16 +250,28 @@ class EvolutionProvider implements WhatsAppProvider {
 
       logger.info(`[EvolutionProvider] Sending media to: ${replyNumber} (isGroup: ${ticket.isGroup})`);
 
-      // Ler arquivo e converter para base64
-      const fileBuffer = fs.readFileSync(media.path);
-      const base64Data = fileBuffer.toString("base64");
-
       // Determinar tipo de mídia
       const typeMessage = media.mimetype.split("/")[0];
       let mediatype: "image" | "video" | "audio" | "document" = "document";
       if (typeMessage === "image") mediatype = "image";
       else if (typeMessage === "video") mediatype = "video";
       else if (typeMessage === "audio") mediatype = "audio";
+
+      // Verificar se o arquivo existe antes de ler
+      let filePath = media.path;
+      if (!fs.existsSync(filePath)) {
+        logger.error(`[EvolutionProvider] Media file not found at: ${filePath}`);
+        throw new AppError("Arquivo de mídia não encontrado. O arquivo pode ter sido processado e removido.");
+      }
+
+      // Ler arquivo e converter para base64
+      const fileBuffer = fs.readFileSync(filePath);
+      const base64Data = fileBuffer.toString("base64");
+
+      if (!base64Data) {
+        logger.error(`[EvolutionProvider] Failed to convert file to base64: ${filePath}`);
+        throw new AppError("Falha ao processar arquivo de mídia.");
+      }
 
       // Enviar mídia via Evolution API
       const response = await evolutionService.sendMediaMessage({
