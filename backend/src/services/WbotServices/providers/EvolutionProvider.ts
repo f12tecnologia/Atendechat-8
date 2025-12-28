@@ -16,7 +16,7 @@ import CreateMessageService from "../../MessageServices/CreateMessageService";
 
 // Função auxiliar para obter o número correto para envio via Evolution API
 // Evolution API espera número limpo (E.164) ou ID de grupo (@g.us)
-async function getReplyNumber(ticketId: number, contactNumber: string): Promise<string | null> {
+async function getReplyNumber(ticketId: number, contactNumber: string, isGroup: boolean): Promise<string | null> {
   // Buscar a última mensagem recebida para obter o remoteJid correto
   const lastReceivedMessage = await Message.findOne({
     where: {
@@ -30,8 +30,8 @@ async function getReplyNumber(ticketId: number, contactNumber: string): Promise<
   if (lastReceivedMessage?.remoteJid) {
     const savedJid = lastReceivedMessage.remoteJid;
 
-    // Para grupos (@g.us), retornar o ID completo do grupo
-    if (savedJid.includes("@g.us")) {
+    // Para grupos (@g.us), SEMPRE retornar o ID completo do grupo
+    if (savedJid.includes("@g.us") || isGroup) {
       logger.info(`[EvolutionProvider] Using group ID: ${savedJid}`);
       return savedJid;
     }
@@ -40,32 +40,55 @@ async function getReplyNumber(ticketId: number, contactNumber: string): Promise<
     // Evolution API aceita números limpos no formato E.164
     const cleanNumber = savedJid.replace(/@s\.whatsapp\.net|@lid/g, "");
     
-    // Validar se é um número E.164 válido (10-15 dígitos)
-    if (cleanNumber.match(/^\d{10,15}$/)) {
+    // Validar se é um número E.164 válido (começa com 55 e tem 12-13 dígitos para Brasil)
+    if (cleanNumber.match(/^55\d{10,11}$/)) {
       logger.info(`[EvolutionProvider] Using E.164 number from remoteJid: ${cleanNumber}`);
       return cleanNumber;
     }
 
-    // Se o número extraído não é válido mas o JID original contém @g.us, retornar ele
-    if (savedJid.includes("@g.us")) {
-      logger.info(`[EvolutionProvider] Using full group JID: ${savedJid}`);
-      return savedJid;
+    // Se não for brasileiro mas for número válido internacional
+    if (cleanNumber.match(/^\d{10,15}$/)) {
+      logger.info(`[EvolutionProvider] Using international E.164 number: ${cleanNumber}`);
+      return cleanNumber;
     }
 
     logger.warn(`[EvolutionProvider] Extracted number is not valid E.164: ${cleanNumber}, trying contact number`);
   }
 
-  // Fallback: verificar se o contactNumber é válido
+  // Se for grupo mas não temos remoteJid, tentar construir baseado no número do contato
+  if (isGroup) {
+    // Se o contactNumber já tem formato de grupo, usar ele
+    if (contactNumber.includes("@g.us")) {
+      logger.info(`[EvolutionProvider] Using group ID from contactNumber: ${contactNumber}`);
+      return contactNumber;
+    }
+    
+    // Tentar adicionar @g.us se parece ser ID de grupo (não começa com 55)
+    const cleanContactNumber = contactNumber.replace(/\D/g, "");
+    if (!cleanContactNumber.startsWith("55") && cleanContactNumber.length > 15) {
+      const groupJid = `${cleanContactNumber}@g.us`;
+      logger.info(`[EvolutionProvider] Constructed group JID: ${groupJid}`);
+      return groupJid;
+    }
+  }
+
+  // Fallback: verificar se o contactNumber é válido para número individual
   const cleanContactNumber = contactNumber.replace(/\D/g, "");
   
-  // Validar formato E.164 (10-15 dígitos)
+  // Validar formato E.164 brasileiro (55 + 10-11 dígitos)
+  if (cleanContactNumber.match(/^55\d{10,11}$/)) {
+    logger.info(`[EvolutionProvider] Using contact number as Brazilian E.164: ${cleanContactNumber}`);
+    return cleanContactNumber;
+  }
+
+  // Validar formato E.164 internacional (10-15 dígitos)
   if (cleanContactNumber.match(/^\d{10,15}$/)) {
-    logger.info(`[EvolutionProvider] Using contact number as E.164: ${cleanContactNumber}`);
+    logger.info(`[EvolutionProvider] Using contact number as international E.164: ${cleanContactNumber}`);
     return cleanContactNumber;
   }
 
   // Se chegou aqui, não temos um número válido
-  logger.error(`[EvolutionProvider] Cannot determine valid reply number. ContactNumber: ${contactNumber}, RemoteJid: ${lastReceivedMessage?.remoteJid || 'none'}`);
+  logger.error(`[EvolutionProvider] Cannot determine valid reply number. ContactNumber: ${contactNumber}, RemoteJid: ${lastReceivedMessage?.remoteJid || 'none'}, IsGroup: ${isGroup}`);
   return null;
 }
 
@@ -135,18 +158,18 @@ class EvolutionProvider implements WhatsAppProvider {
         apiKey: apiIntegration.apiKey
       });
 
-      // Obter o número correto para responder (pode ser LID ou número normal)
-      const replyNumber = await getReplyNumber(ticket.id, ticket.contact.number);
+      // Obter o número correto para responder (pode ser LID, número normal ou grupo)
+      const replyNumber = await getReplyNumber(ticket.id, ticket.contact.number, ticket.isGroup);
 
       // Se não conseguimos obter um número válido, não podemos enviar
       if (!replyNumber) {
-        logger.error(`[EvolutionProvider] Cannot send message - no valid number for contact: ${ticket.contact.number}`);
+        logger.error(`[EvolutionProvider] Cannot send message - no valid number for contact: ${ticket.contact.number}, isGroup: ${ticket.isGroup}`);
         throw new AppError("Não foi possível enviar mensagem. O contato não tem um número válido para resposta.");
       }
 
       const textMessage = formatBody(body, { contact: ticket.contact, user: ticket.user });
 
-      logger.info(`[EvolutionProvider] Sending to: ${replyNumber}`);
+      logger.info(`[EvolutionProvider] Sending to: ${replyNumber} (isGroup: ${ticket.isGroup})`);
 
       // Enviar mensagem via Evolution API
       const response = await evolutionService.sendTextMessage({
@@ -222,18 +245,18 @@ class EvolutionProvider implements WhatsAppProvider {
         apiKey: apiIntegration.apiKey
       });
 
-      // Obter o número correto para responder (pode ser LID ou número normal)
-      const replyNumber = await getReplyNumber(ticket.id, ticket.contact.number);
+      // Obter o número correto para responder (pode ser LID, número normal ou grupo)
+      const replyNumber = await getReplyNumber(ticket.id, ticket.contact.number, ticket.isGroup);
 
       // Se não conseguimos obter um número válido, não podemos enviar
       if (!replyNumber) {
-        logger.error(`[EvolutionProvider] Cannot send media - no valid number for contact: ${ticket.contact.number}`);
+        logger.error(`[EvolutionProvider] Cannot send media - no valid number for contact: ${ticket.contact.number}, isGroup: ${ticket.isGroup}`);
         throw new AppError("Não foi possível enviar mídia. O contato não tem um número válido para resposta.");
       }
 
       const caption = formatBody(body || "", { contact: ticket.contact, user: ticket.user });
 
-      logger.info(`[EvolutionProvider] Sending media to: ${replyNumber}`);
+      logger.info(`[EvolutionProvider] Sending media to: ${replyNumber} (isGroup: ${ticket.isGroup})`);
 
       // Ler arquivo e converter para base64
       const fileBuffer = fs.readFileSync(media.path);
