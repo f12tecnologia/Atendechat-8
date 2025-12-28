@@ -11,7 +11,7 @@ import { WhatsAppProvider, SendTextOptions, SendMediaOptions } from "./WhatsAppP
 import EvolutionApiService from "../../EvolutionApiService/EvolutionApiService";
 import { logger } from "../../../utils/logger";
 import Ticket from "../../../models/Ticket";
-import { proto } from "@whiskey-online/baileys";
+import { proto } from "baileys";
 import CreateMessageService from "../../MessageServices/CreateMessageService";
 
 // Função auxiliar para obter o número correto para envio via Evolution API
@@ -297,8 +297,7 @@ class EvolutionProvider implements WhatsAppProvider {
         }
       });
       if (quotedMsg) {
-        // @ts-ignore
-        msg.message.extendedTextMessage.contextInfo.quotedMessage = {
+        (msg.message.extendedTextMessage.contextInfo as any).quotedMessage = {
           key: {
             remoteJid: msg.key.remoteJid,
             fromMe: quotedMsg.fromMe,
@@ -463,7 +462,7 @@ class EvolutionProvider implements WhatsAppProvider {
         media = msg.message.stickerMessage;
         mimetype = msg.message.stickerMessage.mimetype || "image/webp";
       } else {
-        logger.warn(`[EvolutionProvider] Unsupported media message type: ${messageType}`);
+        logger.warn(`[EvolutionProvider] Unsupported media message type: ${String(messageType)}`);
         return undefined;
       }
 
@@ -537,7 +536,7 @@ class EvolutionProvider implements WhatsAppProvider {
       case "videoMessage":
         return message?.videoMessage?.caption;
       case "audioMessage":
-        return message?.audioMessage?.ptt ? undefined : message?.audioMessage?.text;
+        return undefined; // Audio messages don't have text content
       case "documentMessage":
         return message?.documentMessage?.caption;
       case "extendedTextMessage":
@@ -545,7 +544,7 @@ class EvolutionProvider implements WhatsAppProvider {
       case "stickerMessage":
         return undefined; // Stickers don't have a text body
       default:
-        logger.warn(`[EvolutionProvider] Unknown message type for getBodyMessage: ${messageType}`);
+        logger.warn(`[EvolutionProvider] Unknown message type for getBodyMessage: ${String(messageType)}`);
         return undefined;
     }
   }
