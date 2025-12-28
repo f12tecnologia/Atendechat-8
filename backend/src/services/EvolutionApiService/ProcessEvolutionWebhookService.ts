@@ -111,9 +111,11 @@ const processMediaMessage = async (
     await fs.promises.writeFile(filePath, buffer);
 
     logger.info(`[MEDIA] Saved media to ${fileName} (${buffer.length} bytes)`);
+    logger.info(`[MEDIA] Full file path: ${filePath}`);
+    logger.info(`[MEDIA] Public URL will be: /public/${fileName}`);
 
-    // Retornar caminho completo para o frontend acessar via /public/filename
-    return `/public/${fileName}`;
+    // Retornar apenas o nome do arquivo - o frontend construirá a URL completa
+    return fileName;
   } catch (error) {
     logger.error(`[MEDIA] Error processing media: ${error}`);
     return "";
@@ -526,30 +528,36 @@ const ProcessEvolutionWebhookService = async (
         mimetype = data.message.imageMessage.mimetype || "image/jpeg";
         fileName = `${data.key.id}_${Date.now()}.${mimetype.split("/")[1] || "jpg"}`;
 
-        const savedPath = await processMediaMessage(
+        const savedFileName = await processMediaMessage(
           data.message.imageMessage,
           data.key.id,
           fileName,
           instanceNameToUse,
           apiIntegration
         );
-        if (savedPath) mediaUrl = savedPath;
-        body = data.message.imageMessage.caption || (mediaUrl ? 'Foto' : ''); // Usar 'Foto' como fallback se houver URL
+        if (savedFileName) {
+          mediaUrl = savedFileName;
+          logger.info(`[MEDIA] Image saved as: ${savedFileName}`);
+        }
+        body = data.message.imageMessage.caption || (mediaUrl ? 'Foto' : '');
 
       } else if (data.message.videoMessage) {
         mediaType = "video";
         mimetype = data.message.videoMessage.mimetype || "video/mp4";
         fileName = `${data.key.id}_${Date.now()}.${mimetype.split("/")[1] || "mp4"}`;
 
-        const savedPath = await processMediaMessage(
+        const savedFileName = await processMediaMessage(
           data.message.videoMessage,
           data.key.id,
           fileName,
           instanceNameToUse,
           apiIntegration
         );
-        if (savedPath) mediaUrl = savedPath;
-        body = data.message.videoMessage.caption || (mediaUrl ? 'Vídeo' : ''); // Usar 'Vídeo' como fallback se houver URL
+        if (savedFileName) {
+          mediaUrl = savedFileName;
+          logger.info(`[MEDIA] Video saved as: ${savedFileName}`);
+        }
+        body = data.message.videoMessage.caption || (mediaUrl ? 'Vídeo' : '');
 
       } else if (data.message.audioMessage) {
         mediaType = "audio";
@@ -557,15 +565,18 @@ const ProcessEvolutionWebhookService = async (
         const ext = data.message.audioMessage.ptt ? "ogg" : (mimetype.split("/")[1] || "ogg");
         fileName = `${data.key.id}_${Date.now()}.${ext}`;
 
-        const savedPath = await processMediaMessage(
+        const savedFileName = await processMediaMessage(
           data.message.audioMessage,
           data.key.id,
           fileName,
           instanceNameToUse,
           apiIntegration
         );
-        if (savedPath) mediaUrl = savedPath;
-        body = mediaUrl ? 'Áudio' : ''; // Apenas indicar que é áudio se foi salvo
+        if (savedFileName) {
+          mediaUrl = savedFileName;
+          logger.info(`[MEDIA] Audio saved as: ${savedFileName}`);
+        }
+        body = mediaUrl ? 'Áudio' : '';
 
       } else if (data.message.documentMessage) {
         mediaType = "document";
@@ -573,30 +584,36 @@ const ProcessEvolutionWebhookService = async (
         const originalName = data.message.documentMessage.fileName || "";
         fileName = originalName ? `${data.key.id}_${originalName}` : `${data.key.id}_${Date.now()}.pdf`;
 
-        const savedPath = await processMediaMessage(
+        const savedFileName = await processMediaMessage(
           data.message.documentMessage,
           data.key.id,
           fileName,
           instanceNameToUse,
           apiIntegration
         );
-        if (savedPath) mediaUrl = savedPath;
-        body = data.message.documentMessage.caption || (mediaUrl ? 'Arquivo' : originalName || '[documento]'); // Usar nome original ou 'Arquivo'
+        if (savedFileName) {
+          mediaUrl = savedFileName;
+          logger.info(`[MEDIA] Document saved as: ${savedFileName}`);
+        }
+        body = data.message.documentMessage.caption || (mediaUrl ? 'Arquivo' : originalName || '[documento]');
 
       } else if (data.message.stickerMessage) {
         mediaType = "sticker";
         mimetype = data.message.stickerMessage.mimetype || "image/webp";
         fileName = `${data.key.id}_${Date.now()}.webp`;
 
-        const savedPath = await processMediaMessage(
+        const savedFileName = await processMediaMessage(
           data.message.stickerMessage,
           data.key.id,
           fileName,
           instanceNameToUse,
           apiIntegration
         );
-        if (savedPath) mediaUrl = savedPath;
-        body = mediaUrl ? 'Sticker' : ''; // Apenas indicar que é sticker se foi salvo
+        if (savedFileName) {
+          mediaUrl = savedFileName;
+          logger.info(`[MEDIA] Sticker saved as: ${savedFileName}`);
+        }
+        body = mediaUrl ? 'Sticker' : '';
       }
     }
 

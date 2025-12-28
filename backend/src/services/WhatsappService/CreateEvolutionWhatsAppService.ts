@@ -90,7 +90,7 @@ const CreateEvolutionWhatsAppService = async ({
   cloudApiNumberId,
   cloudApiBusinessId
 }: Request): Promise<Response> => {
-  
+
   const apiIntegration = await ApiIntegration.findOne({
     where: {
       id: apiIntegrationId,
@@ -128,7 +128,30 @@ const CreateEvolutionWhatsAppService = async ({
     apiKey: apiIntegration.apiKey
   });
 
-  const webhookUrl = `${process.env.BACKEND_URL}/api-integrations/webhook/${companyId}`;
+  const BACKEND_URL = process.env.REPLIT_DEV_DOMAIN
+      ? `https://${process.env.REPLIT_DEV_DOMAIN}`
+      : (process.env.BACKEND_URL || "http://localhost:5000");
+
+    const webhookUrl = `${BACKEND_URL}/api-integrations/webhook/${companyId}`;
+
+    logger.info(`[CreateEvolution] Configuring webhook: ${webhookUrl}`);
+
+    const createInstanceParams: any = {
+      instanceName,
+      token: apiIntegration.apiKey,
+      qrcode: true,
+      webhookUrl,
+      webhookEvents: [
+        "MESSAGES_UPSERT",
+        "CONNECTION_UPDATE",
+        "MESSAGES_UPDATE",
+        "SEND_MESSAGE"
+      ],
+      webhookByEvents: true,
+      webhookBase64: true
+    };
+
+    logger.info(`[CreateEvolution] Webhook events: ${JSON.stringify(createInstanceParams.webhookEvents)}`);
 
   let qrcode: string | null = null;
   let instanceExists = false;
@@ -152,7 +175,7 @@ const CreateEvolutionWhatsAppService = async ({
   try {
     if (!instanceExists) {
       logger.info(`Evolution API - Creating instance: ${instanceName} (type: ${connectionType})`);
-      
+
       const createInstanceParams: any = {
         instanceName,
         qrcode: connectionType !== "cloudapi",
@@ -181,14 +204,14 @@ const CreateEvolutionWhatsAppService = async ({
       try {
         logger.info(`Getting QR code via connect endpoint...`);
         const connectResponse = await evolutionService.connectInstance(instanceName);
-        
+
         if (connectResponse) {
           qrcode = connectResponse.base64 || 
                    connectResponse.qrcode?.base64 || 
                    connectResponse.code || 
                    connectResponse.qrcode?.code || 
                    null;
-          
+
           if (qrcode) {
             logger.info(`QR code obtained successfully`);
           }
@@ -238,11 +261,11 @@ const CreateEvolutionWhatsAppService = async ({
 
   } catch (error: any) {
     logger.error("Error creating Evolution WhatsApp connection:", error);
-    
+
     if (error instanceof AppError) {
       throw error;
     }
-    
+
     throw new AppError("ERR_CREATING_EVOLUTION_WHATSAPP");
   }
 };

@@ -468,7 +468,12 @@ const MessagesList = ({ ticket, ticketId, isGroup }) => {
         message.mediaType?.startsWith('image/') || 
         (fileExtension && imageExtensions.includes(fileExtension))) {
       const imageUrl = normalizeUrl(message.mediaUrl);
-      return <ModalImageCors imageUrl={imageUrl} />;
+      // Construir URL completa para a mídia
+      const mediaUrl = imageUrl.startsWith('http')
+        ? imageUrl
+        : `${process.env.REACT_APP_BACKEND_URL || window.location.origin}${imageUrl}`;
+      
+      return <ModalImageCors imageUrl={mediaUrl} />;
     }
 
     // Para vídeos
@@ -507,7 +512,7 @@ const MessagesList = ({ ticket, ticketId, isGroup }) => {
     if (message.mediaType === "application/pdf" || message.mediaUrl?.toLowerCase().endsWith('.pdf')) {
       const pdfUrl = normalizeUrl(message.mediaUrl);
       const fileName = pdfUrl.split('/').pop() || 'documento.pdf';
-      
+
       const handleDownload = (e) => {
         e.preventDefault();
         const link = document.createElement('a');
