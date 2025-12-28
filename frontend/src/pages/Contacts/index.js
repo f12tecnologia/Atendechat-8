@@ -116,6 +116,16 @@ const Contacts = () => {
 
   const userName = user?.name || "";
 
+  const normalizePhoneNumber = (number) => {
+    if (!number) return '';
+
+    // Remove todos os caracteres não numéricos
+    let cleaned = number.replace(/\D/g, '');
+
+    // Retorna o número como está no banco de dados
+    return cleaned;
+  };
+
   useEffect(() => {
     dispatch({ type: "RESET" });
     setPageNumber(1);
@@ -316,7 +326,7 @@ const Contacts = () => {
                     {<Avatar src={contact.profilePicUrl} />}
                   </TableCell>
                   <TableCell>{contact.name}</TableCell>
-                  <TableCell align="center">{contact.number}</TableCell>
+                  <TableCell align="center">{normalizePhoneNumber(contact.number)}</TableCell>
                   <TableCell align="center">{contact.email}</TableCell>
                   <TableCell align="center">
                     <IconButton

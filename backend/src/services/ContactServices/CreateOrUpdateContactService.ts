@@ -21,14 +21,30 @@ interface Request {
 const CreateOrUpdateContactService = async ({
   name,
   number: rawNumber,
-  profilePicUrl,
-  isGroup,
   email = "",
+  profilePicUrl = "",
   companyId,
   extraInfo = [],
-  whatsappId
+  remoteJid = "",
+  whatsappId = ""
 }: Request): Promise<Contact> => {
-  const number = isGroup ? rawNumber : rawNumber.replace(/[^0-9]/g, "");
+  // Normalizar número removendo caracteres não numéricos
+  let number = rawNumber.replace(/\D/g, '');
+
+  // Garantir que número tenha código do país Brasil (55)
+  // Se tiver menos de 12 dígitos ou não começar com 55, adiciona 55
+  if (number.length < 12 || !number.startsWith('55')) {
+    // Remove qualquer 55 existente no meio do número
+    if (number.includes('55') && !number.startsWith('55')) {
+      number = number.replace('55', '');
+    }
+    // Adiciona 55 no início
+    number = '55' + number;
+  }
+
+  const numberExists = await Contact.findOne({
+    where: { number, companyId }
+  });
 
   const io = getIO();
   let contact: Contact | null;
