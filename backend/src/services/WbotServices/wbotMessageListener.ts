@@ -906,7 +906,7 @@ export const verifyMediaMessage = async (
   const body = getBodyMessage(msg);
 
   const hasCap = hasCaption(body, media.filename);
-  const bodyMessage = body ? hasCap ? formatBody(body, ticket.contact) : "-" : "-";
+  const bodyMessage = body ? hasCap ? formatBody(body, { contact: ticket.contact, user: ticket.user }) : "-" : "-";
 
   const messageData = {
     id: msg.key.id,
@@ -1089,6 +1089,15 @@ const verifyQueue = async (
 
   const companyId = ticket.companyId;
 
+  // Garantir que ticket.user esteja carregado para uso em mensagens automáticas
+  await ticket.reload({
+    include: [
+      { model: Contact, as: "contact" },
+      { model: User, as: "user" },
+      { model: Queue, as: "queue" }
+    ]
+  });
+
   const { queues, greetingMessage, maxUseBotQueues, timeUseBotQueues } =
     await ShowWhatsAppService(wbot.id!, ticket.companyId);
 
@@ -1104,7 +1113,7 @@ const verifyQueue = async (
       greetingMessage.length > 1 &&
       sendGreetingMessageOneQueues?.value === "enabled"
     ) {
-      const body = formatBody(`${greetingMessage}`, ticket);
+      const body = formatBody(`${greetingMessage}`, { contact: ticket.contact, user: ticket.user });
 
       await wbot.sendMessage(
         `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
@@ -1183,7 +1192,7 @@ const verifyQueue = async (
     });
 
     const textMessage = {
-      text: formatBody(`\u200e${greetingMessage}`, ticket)
+      text: formatBody(`\u200e${greetingMessage}`, { contact: ticket.contact, user: ticket.user })
     };
 
     const sendMsg = await wbot.sendMessage(
@@ -1235,7 +1244,7 @@ const verifyQueue = async (
         if (now.isBefore(startTime) || now.isAfter(endTime)) {
           const body = formatBody(
             `\u200e ${queue.outOfHoursMessage}\n\n*[ # ]* - Voltar ao Menu Principal`,
-            ticket.contact
+            { contact: ticket.contact, user: ticket.user }
           );
           const sentMessage = await wbot.sendMessage(
             `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
@@ -1292,7 +1301,7 @@ const verifyQueue = async (
 
       const body = formatBody(
         `\u200e${choosenQueue.greetingMessage}`,
-        ticket
+        { contact: ticket.contact, user: ticket.user }
       );
       if (choosenQueue.greetingMessage) {
         const sentMessage = await wbot.sendMessage(
@@ -1369,6 +1378,14 @@ export const handleRating = async (
 ) => {
   const io = getIO();
 
+  // Garantir que ticket.user esteja carregado para uso em mensagens automáticas
+  await ticket.reload({
+    include: [
+      { model: Contact, as: "contact" },
+      { model: User, as: "user" }
+    ]
+  });
+
   const { complationMessage } = await ShowWhatsAppService(
     ticket.whatsappId,
     ticket.companyId
@@ -1391,7 +1408,7 @@ export const handleRating = async (
   });
 
   if (complationMessage) {
-    const body = formatBody(`\u200e${complationMessage}`, ticket);
+    const body = formatBody(`\u200e${complationMessage}`, { contact: ticket.contact, user: ticket.user });
     await SendWhatsAppMessage({ body, ticket });
   }
 
@@ -1432,6 +1449,15 @@ const handleChartbot = async (
   wbot: Session,
   dontReadTheFirstQuestion: boolean = false
 ) => {
+  // Garantir que ticket.user esteja carregado para uso em mensagens automáticas
+  await ticket.reload({
+    include: [
+      { model: Contact, as: "contact" },
+      { model: User, as: "user" },
+      { model: Queue, as: "queue" }
+    ]
+  });
+
   const queue = await Queue.findByPk(ticket.queueId, {
     include: [
       {
@@ -1560,7 +1586,7 @@ const handleChartbot = async (
       });
 
       const buttonMessage = {
-        text: formatBody(`\u200e${queue.greetingMessage}`, ticket),
+        text: formatBody(`\u200e${queue.greetingMessage}`, { contact: ticket.contact, user: ticket.user }),
         buttons,
         headerType: 4
       };
@@ -1587,7 +1613,7 @@ const handleChartbot = async (
       const textMessage = {
         text: formatBody(
           `\u200e${queue.greetingMessage}\n\n${options}`,
-          ticket.contact
+          { contact: ticket.contact, user: ticket.user }
         )
       };
 
@@ -1655,7 +1681,7 @@ const handleChartbot = async (
         ];
 
         const listMessage = {
-          text: formatBody(`\u200e${currentOption.message}`, ticket),
+          text: formatBody(`\u200e${currentOption.message}`, { contact: ticket.contact, user: ticket.user }),
           buttonText: "Escolha uma opção",
           sections
         };
@@ -1686,7 +1712,7 @@ const handleChartbot = async (
         });
 
         const buttonMessage = {
-          text: formatBody(`\u200e${currentOption.message}`, ticket),
+          text: formatBody(`\u200e${currentOption.message}`, { contact: ticket.contact, user: ticket.user }),
           buttons,
           headerType: 4
         };
@@ -1712,7 +1738,7 @@ const handleChartbot = async (
         const textMessage = {
           text: formatBody(
             `\u200e${currentOption.message}\n\n${options}`,
-            ticket
+            { contact: ticket.contact, user: ticket.user }
           )
         };
 

@@ -1,7 +1,6 @@
 import Mustache from "mustache";
 import Contact from "../models/Contact";
 import User from "../models/User";
-import Ticket from "../models/Ticket"; // Import Ticket
 
 export const greeting = (): string => {
   const greetings = ["Boa madrugada", "Bom dia", "Boa tarde", "Boa noite"];
@@ -21,24 +20,22 @@ export const firstName = (contact?: Contact): string => {
 interface FormatBodyOptions {
   contact: Contact;
   user?: User | null;
-  ticket?: Ticket | null; // Added ticket to options
 }
 
-export default (body: string, contactOrOptions: Contact | FormatBodyOptions | Ticket): string => {
+export default (body: string, contactOrOptions: Contact | FormatBodyOptions): string => {
   let contact: Contact;
   let user: User | null | undefined = null;
-  let ticket: Ticket | null | undefined = null; // Added ticket variable
 
-  if (contactOrOptions && 'contact' in contactOrOptions) {
+  if (contactOrOptions && 'contact' in contactOrOptions && 'user' in contactOrOptions) {
+    // FormatBodyOptions object with contact and user
     contact = contactOrOptions.contact;
     user = contactOrOptions.user;
-    ticket = contactOrOptions.ticket; // Assign ticket if present
-  } else if (contactOrOptions instanceof Ticket) { // Handle Ticket directly
-    ticket = contactOrOptions;
-    contact = ticket.contact;
-    user = ticket.user;
-  }
-  else {
+  } else if (contactOrOptions && 'contact' in contactOrOptions) {
+    // FormatBodyOptions with only contact
+    contact = (contactOrOptions as FormatBodyOptions).contact;
+    user = (contactOrOptions as FormatBodyOptions).user;
+  } else {
+    // Direct Contact object
     contact = contactOrOptions as Contact;
   }
 
@@ -77,10 +74,10 @@ export default (body: string, contactOrOptions: Contact | FormatBodyOptions | Ti
     ms,
     protocol,
     hora,
-    atendente: user?.name || "", // Use user?.name for attendant
-    attendant: user?.name || "", // Use user?.name for attendant
-    user: user?.name || "",     // Use user?.name for user
-    userName: user?.name || ""  // Use user?.name for userName
+    atendente: user?.name || "",
+    attendant: user?.name || "",
+    user: user?.name || "",
+    userName: user?.name || ""
   };
   return Mustache.render(body, view);
 };
