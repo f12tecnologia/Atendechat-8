@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import toastError from "../../errors/toastError";
 
-import api from "../../services/api";
+import api, { openApi } from "../../services/api";
 
 const usePlans = () => {
   const [plans, setPlans] = useState([]);
@@ -98,7 +98,26 @@ const usePlans = () => {
     }
   }, []);
 
-  return { plans, loading, list, save, update, remove, getPlanCompany };
+  const getPublicPlanList = useCallback(async () => {
+    try {
+      const { data } = await openApi.get("/plans/list");
+      console.log("[usePlans] Public plans received:", data);
+
+      if (Array.isArray(data)) {
+        return data;
+      } else if (data && Array.isArray(data.plans)) {
+        return data.plans;
+      } else {
+        console.warn("[usePlans] Invalid public plans data format:", data);
+        return [];
+      }
+    } catch (err) {
+      console.error("[usePlans] Error fetching public plans:", err);
+      return [];
+    }
+  }, []);
+
+  return { plans, loading, list, save, update, remove, getPlanCompany, getPublicPlanList };
 };
 
 export default usePlans;
