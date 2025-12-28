@@ -267,7 +267,7 @@ const Connections = () => {
                                                 >
                                                         {i18n.t("connections.buttons.disconnect")}
                                                 </Button>
-                                                {whatsApp.apiIntegrationId && (
+                                                {whatsApp.apiIntegrationId && whatsApp.status !== "CONNECTED" && (
                                                         <>
                                                                 {" "}
                                                                 <Button

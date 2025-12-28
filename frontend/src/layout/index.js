@@ -56,8 +56,8 @@ const useStyles = makeStyles((theme) => ({
     backgroundColor: theme.palette.fancyBackground,
     '& .MuiButton-outlinedPrimary': {
       color: theme.mode === 'light' ? '#FFF' : '#FFF',
-	  //backgroundColor: theme.mode === 'light' ? '#682ee2' : '#682ee2',
-	backgroundColor: theme.mode === 'light' ? theme.palette.primary.main : '#1c1c1c',
+          //backgroundColor: theme.mode === 'light' ? '#682ee2' : '#682ee2',
+        backgroundColor: theme.mode === 'light' ? theme.palette.primary.main : '#1c1c1c',
       //border: theme.mode === 'light' ? '1px solid rgba(0 124 102)' : '1px solid rgba(255, 255, 255, 0.5)',
     },
     '& .MuiTab-textColorPrimary.Mui-selected': {
@@ -179,17 +179,17 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 const LoggedInLayout = ({ children }) => {
-	const classes = useStyles();
-	const [userModalOpen, setUserModalOpen] = useState(false);
-	const [anchorEl, setAnchorEl] = useState(null);
-	const [menuOpen, setMenuOpen] = useState(false);
-	const { handleLogout, loading, user } = useContext(AuthContext);
-	const [drawerOpen, setDrawerOpen] = useState(false);
-	const [drawerVariant, setDrawerVariant] = useState("permanent");
+        const classes = useStyles();
+        const [userModalOpen, setUserModalOpen] = useState(false);
+        const [anchorEl, setAnchorEl] = useState(null);
+        const [menuOpen, setMenuOpen] = useState(false);
+        const { handleLogout, loading, user } = useContext(AuthContext);
+        const [drawerOpen, setDrawerOpen] = useState(false);
+        const [drawerVariant, setDrawerVariant] = useState("permanent");
 
-	const theme = useTheme();
-	const { colorMode } = theme.palette;
-	const greaterThenSm = useMediaQuery(theme.breakpoints.up("sm"));
+        const theme = useTheme();
+        const { colorMode } = theme.palette;
+        const greaterThenSm = useMediaQuery(theme.breakpoints.up("sm"));
 
   const [volume, setVolume] = useState(localStorage.getItem("volume") || 1);
 
@@ -404,11 +404,11 @@ const LoggedInLayout = ({ children }) => {
             {/* {greaterThenSm && user?.profile === "admin" && getDateAndDifDays(user?.company?.dueDate).difData < 7 ? ( */}
             {greaterThenSm && user?.profile === "admin" && user?.company?.dueDate ? (
               <>
-                {i18n.t("mainDrawer.appBar.greeting.hello")} <b>{user.name}</b>, {i18n.t("mainDrawer.appBar.greeting.welcome")} <b>{user?.company?.name}</b>! ({i18n.t("mainDrawer.appBar.greeting.active")} {dateToClient(user?.company?.dueDate)})
+                {i18n.t("mainDrawer.appBar.greeting.hello")} <b>{user?.name || "Usuário"}</b>{user?.company?.name ? (<>, {i18n.t("mainDrawer.appBar.greeting.welcome")} <b>{user.company.name}</b></>) : null}! ({i18n.t("mainDrawer.appBar.greeting.active")} {dateToClient(user?.company?.dueDate)})
               </>
             ) : (
               <>
-                {i18n.t("mainDrawer.appBar.greeting.hello")} <b>{user.name}</b>, {i18n.t("mainDrawer.appBar.greeting.welcome")} <b>{user?.company?.name}</b>!
+                {i18n.t("mainDrawer.appBar.greeting.hello")} <b>{user?.name || "Usuário"}</b>{user?.company?.name ? (<>, {i18n.t("mainDrawer.appBar.greeting.welcome")} <b>{user.company.name}</b></>) : null}!
               </>
             )}
           </Typography>
