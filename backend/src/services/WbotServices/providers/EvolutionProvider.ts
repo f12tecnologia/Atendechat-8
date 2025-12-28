@@ -15,21 +15,9 @@ import { proto } from "baileys";
 import CreateMessageService from "../../MessageServices/CreateMessageService";
 
 // Função auxiliar para obter o número correto para envio via Evolution API
-// Evolution API espera número limpo (E.164) ou JID completo com @lid para LIDs
-// IMPORTANTE: LIDs são específicos da instância, então se o ticket foi recebido por
-// outra instância, o LID não vai funcionar. Nesses casos, tentar usar o número real.
+// Evolution API espera número limpo (E.164) ou ID de grupo (@g.us)
 async function getReplyNumber(ticketId: number, contactNumber: string): Promise<string | null> {
-  // PRIMEIRO: verificar se o contato tem um número real (não LID)
-  // Números válidos têm entre 10-15 dígitos (E.164)
-  const isValidPhoneNumber = contactNumber.match(/^\d{10,15}$/);
-
-  if (isValidPhoneNumber) {
-    // Contato tem número real, usar diretamente
-    logger.info(`[EvolutionProvider] Using real contact number: ${contactNumber}`);
-    return contactNumber;
-  }
-
-  // Contato tem LID como número - precisamos buscar o remoteJid salvo
+  // Buscar a última mensagem recebida para obter o remoteJid correto
   const lastReceivedMessage = await Message.findOne({
     where: {
       ticketId,
@@ -38,36 +26,46 @@ async function getReplyNumber(ticketId: number, contactNumber: string): Promise<
     order: [["createdAt", "DESC"]]
   });
 
+  // Se temos um remoteJid salvo, processar ele
   if (lastReceivedMessage?.remoteJid) {
     const savedJid = lastReceivedMessage.remoteJid;
 
-    // Se é um LID, usar o formato completo @lid
-    if (savedJid.includes("@lid")) {
-      logger.info(`[EvolutionProvider] Using LID format for reply: ${savedJid}`);
-      return savedJid;
-    }
-
-    // Para JIDs normais (@s.whatsapp.net), extrair apenas o número
-    if (savedJid.includes("@s.whatsapp.net")) {
-      const cleanNumber = savedJid.replace("@s.whatsapp.net", "");
-      logger.info(`[EvolutionProvider] Using phone number from saved JID: ${cleanNumber}`);
-      return cleanNumber;
-    }
-
-    // Para grupos (@g.us), usar o ID do grupo
+    // Para grupos (@g.us), retornar o ID completo do grupo
     if (savedJid.includes("@g.us")) {
       logger.info(`[EvolutionProvider] Using group ID: ${savedJid}`);
       return savedJid;
     }
 
-    // Se não tem @, é provavelmente um número limpo
-    logger.info(`[EvolutionProvider] Using saved number directly: ${savedJid}`);
-    return savedJid;
+    // Para JIDs normais (@s.whatsapp.net) ou LIDs (@lid), extrair apenas o número
+    // Evolution API aceita números limpos no formato E.164
+    const cleanNumber = savedJid.replace(/@s\.whatsapp\.net|@lid/g, "");
+    
+    // Validar se é um número E.164 válido (10-15 dígitos)
+    if (cleanNumber.match(/^\d{10,15}$/)) {
+      logger.info(`[EvolutionProvider] Using E.164 number from remoteJid: ${cleanNumber}`);
+      return cleanNumber;
+    }
+
+    // Se o número extraído não é válido mas o JID original contém @g.us, retornar ele
+    if (savedJid.includes("@g.us")) {
+      logger.info(`[EvolutionProvider] Using full group JID: ${savedJid}`);
+      return savedJid;
+    }
+
+    logger.warn(`[EvolutionProvider] Extracted number is not valid E.164: ${cleanNumber}, trying contact number`);
   }
 
-  // Fallback: LID puro sem remoteJid salvo - NÃO PODEMOS ENVIAR
-  // Números puros LID (maiores que 15 dígitos) não funcionam sem o formato @lid
-  logger.error(`[EvolutionProvider] Cannot send to LID contact without saved remoteJid: ${contactNumber}`);
+  // Fallback: verificar se o contactNumber é válido
+  const cleanContactNumber = contactNumber.replace(/\D/g, "");
+  
+  // Validar formato E.164 (10-15 dígitos)
+  if (cleanContactNumber.match(/^\d{10,15}$/)) {
+    logger.info(`[EvolutionProvider] Using contact number as E.164: ${cleanContactNumber}`);
+    return cleanContactNumber;
+  }
+
+  // Se chegou aqui, não temos um número válido
+  logger.error(`[EvolutionProvider] Cannot determine valid reply number. ContactNumber: ${contactNumber}, RemoteJid: ${lastReceivedMessage?.remoteJid || 'none'}`);
   return null;
 }
 
