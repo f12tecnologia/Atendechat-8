@@ -2,6 +2,8 @@ import { WAMessage } from "baileys";
 import { v4 as uuidv4 } from "uuid";
 import Message from "../../models/Message";
 import Ticket from "../../models/Ticket";
+import Contact from "../../models/Contact";
+import User from "../../models/User";
 import ProviderFactory from "./providers/ProviderFactory";
 import CreateMessageService from "../MessageServices/CreateMessageService";
 import formatBody from "../../helpers/Mustache";
@@ -17,6 +19,14 @@ const SendWhatsAppMessage = async ({
   ticket,
   quotedMsg
 }: Request): Promise<WAMessage | any> => {
+  // Garantir que ticket.user está carregado para formatBody
+  await ticket.reload({
+    include: [
+      { model: Contact, as: "contact" },
+      { model: User, as: "user" }
+    ]
+  });
+
   const provider = await ProviderFactory.getProvider(ticket);
   
   const sentMessage = await provider.sendText({
