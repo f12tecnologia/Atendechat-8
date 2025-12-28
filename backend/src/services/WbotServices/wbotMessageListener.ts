@@ -2361,13 +2361,21 @@ const handleMessage = async (
       return;
     }
 
-    const ticket = await FindOrCreateTicketService(
-      contact,
-      wbot.id!,
-      unreadMessages,
-      companyId,
-      groupContact
-    );
+    const ticketData = {
+      id: ticket.id,
+      companyId: ticket.companyId,
+      whatsappId: wbot.id
+    };
+
+    const ticket = await Ticket.findByPk(ticketData.id, {
+        include: [
+          { model: Contact, as: "contact" },
+          { model: Queue, as: "queue" },
+          { model: Whatsapp, as: "whatsapp" },
+          { model: User, as: "user" }
+        ]
+      });
+
 
     await provider(ticket, msg, companyId, contact, wbot as WASocket);
 

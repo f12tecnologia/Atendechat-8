@@ -178,20 +178,18 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const LoggedInLayout = ({ children, themeToggle }) => {
-  const classes = useStyles();
-  const [userModalOpen, setUserModalOpen] = useState(false);
-  const [anchorEl, setAnchorEl] = useState(null);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const { handleLogout, loading } = useContext(AuthContext);
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [drawerVariant, setDrawerVariant] = useState("permanent");
-  // const [dueDate, setDueDate] = useState("");
-  const { user } = useContext(AuthContext);
+const LoggedInLayout = ({ children }) => {
+	const classes = useStyles();
+	const [userModalOpen, setUserModalOpen] = useState(false);
+	const [anchorEl, setAnchorEl] = useState(null);
+	const [menuOpen, setMenuOpen] = useState(false);
+	const { handleLogout, loading, user } = useContext(AuthContext);
+	const [drawerOpen, setDrawerOpen] = useState(false);
+	const [drawerVariant, setDrawerVariant] = useState("permanent");
 
-  const theme = useTheme();
-  const { colorMode } = useContext(ColorModeContext);
-  const greaterThenSm = useMediaQuery(theme.breakpoints.up("sm"));
+	const theme = useTheme();
+	const { colorMode } = theme.palette;
+	const greaterThenSm = useMediaQuery(theme.breakpoints.up("sm"));
 
   const [volume, setVolume] = useState(localStorage.getItem("volume") || 1);
 
@@ -414,7 +412,7 @@ const LoggedInLayout = ({ children, themeToggle }) => {
               </>
             )}
           </Typography>
-          
+
           <div>
             <IconButton edge="start">
               <LanguageOutlined
