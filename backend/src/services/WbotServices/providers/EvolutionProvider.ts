@@ -12,7 +12,7 @@ import EvolutionApiService from "../../EvolutionApiService/EvolutionApiService";
 import { logger } from "../../../utils/logger";
 import Ticket from "../../../models/Ticket";
 import { proto } from "@whiskey-online/baileys";
-import CreateMessageService from "../../../services/Message/CreateMessageService";
+import CreateMessageService from "../../MessageServices/CreateMessageService";
 
 // Função auxiliar para obter o número correto para envio via Evolution API
 // Evolution API espera número limpo (E.164) ou JID completo com @lid para LIDs

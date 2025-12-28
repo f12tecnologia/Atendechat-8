@@ -1,4 +1,3 @@
-replit_final_file>
 import path, { join } from "path";
 import { promisify } from "util";
 import { readFile, writeFile } from "fs";
@@ -3048,4 +3047,3 @@ const wbotMessageListener = async (
 };
 
 export { wbotMessageListener, handleMessage };
-</replit_final_file>
