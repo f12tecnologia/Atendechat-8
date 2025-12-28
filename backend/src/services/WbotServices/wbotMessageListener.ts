@@ -1100,8 +1100,10 @@ const verifyQueue = async (
 
   // Se o ticket tem userId mas user não está carregado, carregar explicitamente
   if (ticket.userId && !ticket.user) {
-    const user = await User.findByPk(ticket.userId);
-    ticket.user = user;
+    const userFound = await User.findByPk(ticket.userId);
+    if (userFound) {
+      ticket.user = userFound;
+    }
   }
 
   const { queues, greetingMessage, maxUseBotQueues, timeUseBotQueues } =

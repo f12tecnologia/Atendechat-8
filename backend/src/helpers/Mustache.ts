@@ -78,10 +78,10 @@ export default (body: string, contactOrOptions: Contact | FormatBodyOptions): st
     ms,
     protocol,
     hora,
-    atendente: user?.name || "",
-    attendant: user?.name || "",
-    user: user?.name || "",
-    userName: user?.name || ""
+    atendente: user?.name || "{{atendente}}",
+    attendant: user?.name || "{{attendant}}",
+    user: user?.name || "{{user}}",
+    userName: user?.name || "{{userName}}"
   };
   return Mustache.render(body, view);
 };
