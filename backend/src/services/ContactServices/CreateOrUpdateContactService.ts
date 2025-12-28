@@ -10,12 +10,13 @@ interface ExtraInfo extends ContactCustomField {
 interface Request {
   name: string;
   number: string;
-  isGroup: boolean;
+  isGroup?: boolean;
   email?: string;
   profilePicUrl?: string;
   companyId: number;
   extraInfo?: ExtraInfo[];
   whatsappId?: number;
+  remoteJid?: string;
 }
 
 const CreateOrUpdateContactService = async ({
@@ -26,7 +27,8 @@ const CreateOrUpdateContactService = async ({
   companyId,
   extraInfo = [],
   remoteJid = "",
-  whatsappId = ""
+  whatsappId,
+  isGroup = false
 }: Request): Promise<Contact> => {
   // Normalizar número removendo caracteres não numéricos
   let number = rawNumber.replace(/\D/g, '');
