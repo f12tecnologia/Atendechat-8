@@ -114,8 +114,8 @@ const processMediaMessage = async (
     logger.info(`[MEDIA] Full file path: ${filePath}`);
     logger.info(`[MEDIA] Public URL will be: /public/${fileName}`);
 
-    // Retornar apenas o nome do arquivo - o frontend construirá a URL completa
-    return fileName;
+    // Retornar URL com prefixo /public/ para o frontend usar diretamente
+    return `/public/${fileName}`;
   } catch (error) {
     logger.error(`[MEDIA] Error processing media: ${error}`);
     return "";
