@@ -282,7 +282,7 @@ const Contacts = () => {
       </ConfirmationModal>
       <MainHeader>
         <Typography variant="h5" style={{ color: "#fff", fontWeight: 500 }}>
-          Olá {userName}, Bem vindo a Intelfoz!
+          Olá {user?.name || "Usuário"}, Bem vindo à Intelfoz!
         </Typography>
         </MainHeader>
       <Paper

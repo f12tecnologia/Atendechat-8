@@ -1098,6 +1098,12 @@ const verifyQueue = async (
     ]
   });
 
+  // Se o ticket tem userId mas user não está carregado, carregar explicitamente
+  if (ticket.userId && !ticket.user) {
+    const user = await User.findByPk(ticket.userId);
+    ticket.user = user;
+  }
+
   const { queues, greetingMessage, maxUseBotQueues, timeUseBotQueues } =
     await ShowWhatsAppService(wbot.id!, ticket.companyId);
 
@@ -1113,6 +1119,14 @@ const verifyQueue = async (
       greetingMessage.length > 1 &&
       sendGreetingMessageOneQueues?.value === "enabled"
     ) {
+      // Garantir que o user está carregado antes de formatar a mensagem
+      await ticket.reload({
+        include: [
+          { model: Contact, as: "contact" },
+          { model: User, as: "user" }
+        ]
+      });
+
       const body = formatBody(`${greetingMessage}`, { contact: ticket.contact, user: ticket.user });
 
       await wbot.sendMessage(
