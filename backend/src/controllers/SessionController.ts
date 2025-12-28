@@ -80,14 +80,25 @@ export const me = async (
   res: Response
 ): Promise<Response> => {
   const token: string = req.cookies.jrt;
-  const user = await FindUserFromToken(token);
-  const { id, profile, super: superAdmin } = user;
 
   if (!token) {
     throw new AppError("ERR_SESSION_EXPIRED", 401);
   }
 
-  return res.json({ id, profile, super: superAdmin });
+  const user = await FindUserFromToken(token);
+
+  return res.json({
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    profile: user.profile,
+    super: user.super,
+    companyId: user.companyId,
+    company: user.company,
+    queues: user.queues,
+    whatsappId: user.whatsappId,
+    allTicket: user.allTicket
+  });
 };
 
 export const remove = async (
