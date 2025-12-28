@@ -493,9 +493,10 @@ const ProcessEvolutionWebhookService = async (
     const ticket = await FindOrCreateTicketService(
       contact,
       whatsapp.id!,
-      defaultQueueId,
+      1, // unreadMessages
       companyId,
-      undefined
+      undefined, // groupContact
+      defaultQueueId // queueId da conexão WhatsApp
     );
 
     // Recarregar ticket com todos os relacionamentos incluindo user

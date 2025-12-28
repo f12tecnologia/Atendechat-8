@@ -2343,6 +2343,9 @@ const handleMessage = async (
     const whatsapp = await ShowWhatsAppService(wbot.id!, companyId);
     const contact = await verifyContact(msgContact, wbot, companyId);
 
+    // Usar primeira fila padrão do WhatsApp (já vem ordenada do ShowWhatsAppService)
+    const defaultQueueId = whatsapp.queues && whatsapp.queues.length > 0 ? whatsapp.queues[0].id : 0;
+
     let unreadMessages = 0;
 
     if (msg.key.fromMe) {
@@ -2379,7 +2382,8 @@ const handleMessage = async (
       wbot.id!,
       unreadMessages,
       companyId,
-      groupContact
+      groupContact,
+      defaultQueueId // queueId da conexão WhatsApp
     );
 
     // CRÍTICO: Recarregar ticket com todas as associações incluindo user

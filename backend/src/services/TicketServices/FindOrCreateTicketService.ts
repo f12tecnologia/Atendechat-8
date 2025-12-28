@@ -18,7 +18,8 @@ const FindOrCreateTicketService = async (
   whatsappId: number,
   unreadMessages: number,
   companyId: number,
-  groupContact?: Contact
+  groupContact?: Contact,
+  queueId?: number
 ): Promise<Ticket> => {
   let ticket = await Ticket.findOne({
     where: {
@@ -37,7 +38,13 @@ const FindOrCreateTicketService = async (
   }
 
   if (ticket?.status === "closed") {
-    await ticket.update({ queueId: null, userId: null });
+    // Ao reabrir ticket fechado, usar queueId fornecido ou preservar o existente
+    const newQueueId = queueId && queueId > 0 ? queueId : ticket.queueId;
+    await ticket.update({ 
+      queueId: newQueueId, 
+      userId: null,
+      status: "pending"
+    });
   }
 
   if (!ticket && groupContact) {
@@ -49,11 +56,13 @@ const FindOrCreateTicketService = async (
     });
 
     if (ticket) {
+      // Usar queueId fornecido ou preservar o existente do ticket
+      const newQueueId = queueId && queueId > 0 ? queueId : ticket.queueId;
       await ticket.update({
         status: "pending",
         userId: null,
         unreadMessages,
-        queueId: null,
+        queueId: newQueueId,
         companyId
       });
       await FindOrCreateATicketTrakingService({
@@ -84,11 +93,13 @@ const FindOrCreateTicketService = async (
     });
 
     if (ticket) {
+      // Usar queueId fornecido ou preservar o existente do ticket
+      const newQueueId = queueId && queueId > 0 ? queueId : ticket.queueId;
       await ticket.update({
         status: "pending",
         userId: null,
         unreadMessages,
-        queueId: null,
+        queueId: newQueueId,
         companyId
       });
       await FindOrCreateATicketTrakingService({
@@ -112,7 +123,8 @@ const FindOrCreateTicketService = async (
       unreadMessages,
       whatsappId,
       whatsapp,
-      companyId
+      companyId,
+      queueId: queueId && queueId > 0 ? queueId : null
     });
     await FindOrCreateATicketTrakingService({
       ticketId: ticket.id,
