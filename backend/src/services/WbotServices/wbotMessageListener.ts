@@ -1,3 +1,4 @@
+replit_final_file>
 import path, { join } from "path";
 import { promisify } from "util";
 import { readFile, writeFile } from "fs";
@@ -2077,10 +2078,6 @@ const flowbuilderIntegration = async (
       // };
       // worker.postMessage(data);
 
-      // worker.on("message", message => {
-      //   console.log(`Mensagem do worker: ${message}`);
-      // });
-
       await ActionsWebhookService(
         whatsapp.id,
         webhook.config["details"].idFlow,
@@ -2377,20 +2374,24 @@ const handleMessage = async (
       return;
     }
 
-    const ticketData = {
-      id: ticket.id,
-      companyId: ticket.companyId,
-      whatsappId: wbot.id
-    };
+    // Buscar ou criar ticket
+    let ticket = await FindOrCreateTicketService(
+      contact,
+      wbot.id!,
+      unreadMessages,
+      companyId,
+      groupContact
+    );
 
-    const ticket = await Ticket.findByPk(ticketData.id, {
-        include: [
-          { model: Contact, as: "contact" },
-          { model: Queue, as: "queue" },
-          { model: Whatsapp, as: "whatsapp" },
-          { model: User, as: "user" }
-        ]
-      });
+    // CRÍTICO: Recarregar ticket com todas as associações incluindo user
+    await ticket.reload({
+      include: [
+        { model: Contact, as: "contact" },
+        { model: Queue, as: "queue" },
+        { model: Whatsapp, as: "whatsapp" },
+        { model: User, as: "user" }
+      ]
+    });
 
 
     await provider(ticket, msg, companyId, contact, wbot as WASocket);
@@ -3047,3 +3048,4 @@ const wbotMessageListener = async (
 };
 
 export { wbotMessageListener, handleMessage };
+</replit_final_file>
