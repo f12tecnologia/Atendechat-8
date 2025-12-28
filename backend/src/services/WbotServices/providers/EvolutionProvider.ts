@@ -17,78 +17,70 @@ import CreateMessageService from "../../MessageServices/CreateMessageService";
 // Função auxiliar para obter o número correto para envio via Evolution API
 // Evolution API espera número limpo (E.164) ou ID de grupo (@g.us)
 async function getReplyNumber(ticketId: number, contactNumber: string, isGroup: boolean): Promise<string | null> {
-  // Buscar a última mensagem recebida para obter o remoteJid correto
-  const lastReceivedMessage = await Message.findOne({
-    where: {
-      ticketId,
-      fromMe: false
-    },
-    order: [["createdAt", "DESC"]]
-  });
-
-  // Se temos um remoteJid salvo, processar ele
-  if (lastReceivedMessage?.remoteJid) {
-    const savedJid = lastReceivedMessage.remoteJid;
-
-    // Para grupos (@g.us), SEMPRE retornar o ID completo do grupo
-    if (savedJid.includes("@g.us") || isGroup) {
-      logger.info(`[EvolutionProvider] Using group ID: ${savedJid}`);
-      return savedJid;
-    }
-
-    // Para JIDs normais (@s.whatsapp.net) ou LIDs (@lid), extrair apenas o número
-    // Evolution API aceita números limpos no formato E.164
-    const cleanNumber = savedJid.replace(/@s\.whatsapp\.net|@lid/g, "");
-    
-    // Validar se é um número E.164 válido (começa com 55 e tem 12-13 dígitos para Brasil)
-    if (cleanNumber.match(/^55\d{10,11}$/)) {
-      logger.info(`[EvolutionProvider] Using E.164 number from remoteJid: ${cleanNumber}`);
-      return cleanNumber;
-    }
-
-    // Se não for brasileiro mas for número válido internacional
-    if (cleanNumber.match(/^\d{10,15}$/)) {
-      logger.info(`[EvolutionProvider] Using international E.164 number: ${cleanNumber}`);
-      return cleanNumber;
-    }
-
-    logger.warn(`[EvolutionProvider] Extracted number is not valid E.164: ${cleanNumber}, trying contact number`);
-  }
-
-  // Se for grupo mas não temos remoteJid, tentar construir baseado no número do contato
+  // Para grupos, buscar o remoteJid que deve conter o ID do grupo
   if (isGroup) {
-    // Se o contactNumber já tem formato de grupo, usar ele
+    const lastMessage = await Message.findOne({
+      where: { ticketId },
+      order: [["createdAt", "DESC"]]
+    });
+
+    if (lastMessage?.remoteJid && lastMessage.remoteJid.includes("@g.us")) {
+      logger.info(`[EvolutionProvider] Using group ID from message: ${lastMessage.remoteJid}`);
+      return lastMessage.remoteJid;
+    }
+
+    // Fallback: se contactNumber já tem formato de grupo
     if (contactNumber.includes("@g.us")) {
-      logger.info(`[EvolutionProvider] Using group ID from contactNumber: ${contactNumber}`);
+      logger.info(`[EvolutionProvider] Using group ID from contact: ${contactNumber}`);
       return contactNumber;
     }
-    
-    // Tentar adicionar @g.us se parece ser ID de grupo (não começa com 55)
-    const cleanContactNumber = contactNumber.replace(/\D/g, "");
-    if (!cleanContactNumber.startsWith("55") && cleanContactNumber.length > 15) {
-      const groupJid = `${cleanContactNumber}@g.us`;
-      logger.info(`[EvolutionProvider] Constructed group JID: ${groupJid}`);
-      return groupJid;
-    }
+
+    logger.error(`[EvolutionProvider] Cannot find valid group ID for ticket ${ticketId}`);
+    return null;
   }
 
-  // Fallback: verificar se o contactNumber é válido para número individual
+  // Para números individuais, SEMPRE usar o número do contato (número real)
+  // Limpar o número removendo qualquer caractere não-numérico
   const cleanContactNumber = contactNumber.replace(/\D/g, "");
   
   // Validar formato E.164 brasileiro (55 + 10-11 dígitos)
   if (cleanContactNumber.match(/^55\d{10,11}$/)) {
-    logger.info(`[EvolutionProvider] Using contact number as Brazilian E.164: ${cleanContactNumber}`);
+    logger.info(`[EvolutionProvider] Using Brazilian E.164 number from contact: ${cleanContactNumber}`);
     return cleanContactNumber;
   }
 
   // Validar formato E.164 internacional (10-15 dígitos)
   if (cleanContactNumber.match(/^\d{10,15}$/)) {
-    logger.info(`[EvolutionProvider] Using contact number as international E.164: ${cleanContactNumber}`);
+    logger.info(`[EvolutionProvider] Using international E.164 number from contact: ${cleanContactNumber}`);
     return cleanContactNumber;
   }
 
-  // Se chegou aqui, não temos um número válido
-  logger.error(`[EvolutionProvider] Cannot determine valid reply number. ContactNumber: ${contactNumber}, RemoteJid: ${lastReceivedMessage?.remoteJid || 'none'}, IsGroup: ${isGroup}`);
+  // Se o número do contato não é válido, tentar extrair do remoteJid como última tentativa
+  const lastMessage = await Message.findOne({
+    where: { ticketId, fromMe: false },
+    order: [["createdAt", "DESC"]]
+  });
+
+  if (lastMessage?.remoteJid) {
+    const savedJid = lastMessage.remoteJid;
+    
+    // Extrair número do JID (remover @s.whatsapp.net ou @lid)
+    const extractedNumber = savedJid.replace(/@s\.whatsapp\.net|@lid/g, "");
+    
+    // Validar se o número extraído é válido
+    if (extractedNumber.match(/^55\d{10,11}$/)) {
+      logger.warn(`[EvolutionProvider] Contact number invalid, using extracted number from remoteJid: ${extractedNumber}`);
+      return extractedNumber;
+    }
+    
+    if (extractedNumber.match(/^\d{10,15}$/)) {
+      logger.warn(`[EvolutionProvider] Contact number invalid, using international extracted number: ${extractedNumber}`);
+      return extractedNumber;
+    }
+  }
+
+  // Se chegou aqui, não conseguimos um número válido
+  logger.error(`[EvolutionProvider] Cannot determine valid number. ContactNumber: ${contactNumber}, IsGroup: ${isGroup}`);
   return null;
 }
 
