@@ -29,23 +29,19 @@ runButton = "Project"
 [[workflows.workflow]]
 name = "Project"
 author = "agent"
-mode = "parallel"
+mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd backend && npm start"
+args = "redis-server --daemonize yes --port 6379 --protected-mode no"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd frontend && PORT=3000 BROWSER=none npm start"
+args = "sleep 2 && redis-cli ping"
 
 [[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Redis"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Production"
+task = "shell.exec"
+args = "cd backend && npm start & cd frontend && PORT=3000 BROWSER=none npm start & wait"
 
 [[workflows.workflow]]
 name = "Redis"
