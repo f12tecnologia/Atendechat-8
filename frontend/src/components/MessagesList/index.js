@@ -447,23 +447,25 @@ const MessagesList = ({ ticket, ticketId, isGroup }) => {
       return <LocationPreview image={imageLocation} link={linkLocation} description={descriptionLocation} />
     }
 
+    // Normalizar URL - garantir que sempre tenha /public/ se não for http
+    const normalizeUrl = (url) => {
+      if (!url) return '';
+      if (url.startsWith('http://') || url.startsWith('https://')) return url;
+      if (url.startsWith('/public/')) return url;
+      // Remove qualquer / inicial antes de adicionar /public/
+      const cleanUrl = url.startsWith('/') ? url.substring(1) : url;
+      return `/public/${cleanUrl}`;
+    };
+
     // Para imagens
     if (message.mediaType === "image" || message.mediaType?.startsWith('image/')) {
-      // Normalizar URL da imagem
-      let imageUrl = message.mediaUrl;
-      if (!imageUrl.startsWith('/public/') && !imageUrl.startsWith('http')) {
-        imageUrl = `/public/${imageUrl}`;
-      }
+      const imageUrl = normalizeUrl(message.mediaUrl);
       return <ModalImageCors imageUrl={imageUrl} />;
     }
 
     // Para vídeos
     if (message.mediaType === "video" || message.mediaType?.startsWith('video/')) {
-      // Normalizar URL do vídeo
-      let videoUrl = message.mediaUrl;
-      if (!videoUrl.startsWith('/public/') && !videoUrl.startsWith('http')) {
-        videoUrl = `/public/${videoUrl}`;
-      }
+      const videoUrl = normalizeUrl(message.mediaUrl);
       return (
         <video
           className={classes.messageMedia}
@@ -476,11 +478,7 @@ const MessagesList = ({ ticket, ticketId, isGroup }) => {
 
     // Para áudios
     if (message.mediaType === "audio" || message.mediaType === "ptt" || message.mediaType?.startsWith('audio/')) {
-      // Normalizar URL do áudio
-      let audioUrl = message.mediaUrl;
-      if (!audioUrl.startsWith('/public/') && !audioUrl.startsWith('http')) {
-        audioUrl = `/public/${audioUrl}`;
-      }
+      const audioUrl = normalizeUrl(message.mediaUrl);
       return (
         <audio
           controls
@@ -492,12 +490,9 @@ const MessagesList = ({ ticket, ticketId, isGroup }) => {
       );
     }
 
-    // Para PDFs - exibir visualização inline
+    // Para PDFs
     if (message.mediaType === "application/pdf" || message.mediaUrl?.toLowerCase().endsWith('.pdf')) {
-      let pdfUrl = message.mediaUrl;
-      if (!pdfUrl.startsWith('/public/') && !pdfUrl.startsWith('http')) {
-        pdfUrl = `/public/${pdfUrl}`;
-      }
+      const pdfUrl = normalizeUrl(message.mediaUrl);
       return (
         <>
           <div style={{ width: '100%', height: '400px', marginBottom: '8px' }}>
@@ -526,18 +521,13 @@ const MessagesList = ({ ticket, ticketId, isGroup }) => {
       );
     }
 
-    // Para documentos do Office (Word, Excel, PowerPoint)
+    // Para documentos do Office
     if (message.mediaType?.includes('officedocument') || 
         message.mediaType?.includes('msword') ||
         message.mediaType?.includes('ms-excel') ||
         message.mediaType?.includes('ms-powerpoint') ||
         message.mediaUrl?.match(/\.(doc|docx|xls|xlsx|ppt|pptx)$/i)) {
-      let docUrl = message.mediaUrl;
-      if (!docUrl.startsWith('/public/') && !docUrl.startsWith('http')) {
-        docUrl = `/public/${docUrl}`;
-      }
-
-      // Usar visualizador do Office Online
+      const docUrl = normalizeUrl(message.mediaUrl);
       const fullUrl = window.location.origin + docUrl;
       const officeViewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fullUrl)}`;
 
@@ -569,16 +559,10 @@ const MessagesList = ({ ticket, ticketId, isGroup }) => {
       );
     }
 
-    // Para outros tipos de arquivos (ZIP, RAR, TXT, etc)
+    // Para outros tipos de arquivos
     if (message.mediaUrl) {
-      // Normalizar URL do documento
-      let documentUrl = message.mediaUrl;
-      if (!documentUrl.startsWith('/public/') && !documentUrl.startsWith('http')) {
-        documentUrl = `/public/${documentUrl}`;
-      }
-
-      // Extrair nome e extensão do arquivo
-      const fileName = message.body || documentUrl.split('/').pop() || 'arquivo';
+      const documentUrl = normalizeUrl(message.mediaUrl);
+      const fileName = documentUrl.split('/').pop() || 'arquivo';
       const fileExtension = fileName.split('.').pop()?.toUpperCase() || 'FILE';
 
       return (
