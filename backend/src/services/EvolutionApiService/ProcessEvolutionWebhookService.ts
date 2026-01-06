@@ -15,16 +15,52 @@ import { getIO } from "../../libs/socket";
 import { logger } from "../../utils/logger";
 import EvolutionApiService from "./EvolutionApiService";
 
-const isValidPhoneNumber = (number: string): boolean => {
+/**
+ * Valida número de telefone brasileiro para WhatsApp
+ * Formatos válidos:
+ * - 12 dígitos: 55 + DDD (2) + número (8) - telefone fixo ou celular antigo
+ * - 13 dígitos: 55 + DDD (2) + 9 + número (8) - celular com nono dígito
+ * 
+ * Números inválidos (LIDs, IDs internos do WhatsApp):
+ * - Números com mais de 13 dígitos
+ * - Números que não começam com 55
+ */
+const isValidBrazilianPhoneNumber = (number: string): boolean => {
   if (!number) return false;
+  
   const cleanNumber = number.replace(/\D/g, "");
-  if (cleanNumber.length < 8 || cleanNumber.length > 15) {
+  
+  // Número brasileiro válido: 12 ou 13 dígitos começando com 55
+  if (cleanNumber.length !== 12 && cleanNumber.length !== 13) {
+    logger.info(`[VALIDATION] Invalid phone number length: ${cleanNumber.length} digits (${cleanNumber})`);
     return false;
   }
-  if (/^0+$/.test(cleanNumber)) {
+  
+  // Deve começar com 55 (código do Brasil)
+  if (!cleanNumber.startsWith("55")) {
+    logger.info(`[VALIDATION] Invalid phone number - doesn't start with 55: ${cleanNumber}`);
     return false;
   }
+  
+  // Validar DDD (2 dígitos após 55, entre 11 e 99)
+  const ddd = parseInt(cleanNumber.substring(2, 4), 10);
+  if (ddd < 11 || ddd > 99) {
+    logger.info(`[VALIDATION] Invalid DDD: ${ddd}`);
+    return false;
+  }
+  
   return true;
+};
+
+/**
+ * Valida ID de grupo do WhatsApp
+ * Formato: números seguidos de @g.us (ex: 120363136866815944@g.us)
+ */
+const isValidGroupId = (groupId: string): boolean => {
+  if (!groupId) return false;
+  // ID de grupo é apenas números (sem validação de formato de telefone)
+  const cleanId = groupId.replace(/\D/g, "");
+  return cleanId.length >= 10 && cleanId.length <= 30;
 };
 
 const publicFolder = path.resolve(__dirname, "..", "..", "..", "public");
