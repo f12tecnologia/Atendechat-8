@@ -450,10 +450,19 @@ const ProcessEvolutionWebhookService = async (
       contactName = data.pushName || contactNumber; // Usar pushName se disponível
     }
 
-    // Validar número de telefone (não aplicável a grupos)
-    if (!isGroup && !isValidPhoneNumber(contactNumber)) {
-      logger.warn(`[WEBHOOK] Invalid phone number rejected: ${contactNumber}`);
-      return;
+    // Validar número de telefone ou ID de grupo
+    if (isGroup) {
+      // Validar ID de grupo
+      if (!isValidGroupId(contactNumber)) {
+        logger.warn(`[WEBHOOK] Invalid group ID rejected: ${contactNumber}`);
+        return;
+      }
+    } else {
+      // Validar número de telefone brasileiro (12-13 dígitos começando com 55)
+      if (!isValidBrazilianPhoneNumber(contactNumber)) {
+        logger.warn(`[WEBHOOK] Invalid Brazilian phone number rejected: ${contactNumber} (must be 12-13 digits starting with 55)`);
+        return;
+      }
     }
 
     // Buscar foto de perfil (apenas para contatos individuais, não grupos)
