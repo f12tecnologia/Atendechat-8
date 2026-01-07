@@ -448,12 +448,21 @@ const MessagesList = ({ ticket, ticketId, isGroup }) => {
     }
 
     // Normalizar URL - garantir que sempre tenha /public/ se não for http
+    // Também corrige duplicação de /public/
     const normalizeUrl = (url) => {
       if (!url) return '';
       if (url.startsWith('http://') || url.startsWith('https://')) return url;
-      if (url.startsWith('/public/')) return url;
+      
+      // Corrigir duplicação de /public/ (ex: /public//public/file ou /public/public/file)
+      let cleanUrl = url;
+      while (cleanUrl.includes('/public//public/') || cleanUrl.includes('/public/public/')) {
+        cleanUrl = cleanUrl.replace('/public//public/', '/public/');
+        cleanUrl = cleanUrl.replace('/public/public/', '/public/');
+      }
+      
+      if (cleanUrl.startsWith('/public/')) return cleanUrl;
       // Remove qualquer / inicial antes de adicionar /public/
-      const cleanUrl = url.startsWith('/') ? url.substring(1) : url;
+      cleanUrl = cleanUrl.startsWith('/') ? cleanUrl.substring(1) : cleanUrl;
       return `/public/${cleanUrl}`;
     };
 

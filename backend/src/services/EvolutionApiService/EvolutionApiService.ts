@@ -33,6 +33,8 @@ interface SendMediaMessageRequest {
   mediatype: "image" | "video" | "audio" | "document";
   media: string;
   caption?: string;
+  fileName?: string;
+  mimetype?: string;
 }
 
 class EvolutionApiService {
@@ -264,16 +266,25 @@ class EvolutionApiService {
   async sendMediaMessage(data: SendMediaMessageRequest): Promise<any> {
     try {
       logger.info(`Evolution API - Sending ${data.mediatype} to ${data.number} via instance ${data.instanceName}`);
-      logger.info(`Evolution API - Media base64 length: ${data.media?.length || 0} chars`);
+      logger.info(`Evolution API - Media base64 length: ${data.media?.length || 0} chars, fileName: ${data.fileName || 'none'}`);
+      
+      const payload: any = {
+        number: data.number,
+        mediatype: data.mediatype,
+        media: data.media,
+        caption: data.caption || ""
+      };
+
+      if (data.fileName) {
+        payload.fileName = data.fileName;
+      }
+      if (data.mimetype) {
+        payload.mimetype = data.mimetype;
+      }
       
       const response = await this.client.post(
         `/message/sendMedia/${data.instanceName}`,
-        {
-          number: data.number,
-          mediatype: data.mediatype,
-          media: data.media,
-          caption: data.caption || ""
-        }
+        payload
       );
       logger.info(
         `Evolution API - Media message sent to ${data.number} via ${data.instanceName}`

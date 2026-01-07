@@ -279,7 +279,9 @@ class EvolutionProvider implements WhatsAppProvider {
         number: replyNumber,
         mediatype,
         media: base64Data,
-        caption
+        caption,
+        fileName: media.originalname || undefined,
+        mimetype: media.mimetype || undefined
       });
 
       await ticket.update({ lastMessage: caption || media.originalname });
