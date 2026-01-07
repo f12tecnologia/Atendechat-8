@@ -155,6 +155,15 @@ const SendWhatsAppMedia = async ({
     // Get media URL - use /public/ path for frontend access
     const mediaFileName = path.basename(media.path);
     const mediaUrl = `/public/${mediaFileName}`;
+    
+    // Log para debug de mídia
+    console.log(`[SendWhatsAppMedia] Saving message:`, {
+      mediaPath: media.path,
+      mediaFileName,
+      mediaUrl,
+      mediaType,
+      originalName: media.originalname
+    });
 
     // Save message to database
     await CreateMessageService({

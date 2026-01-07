@@ -47,8 +47,7 @@ const ModalImageCors = ({ imageUrl }) => {
                                 setBlobUrl(url);
                                 setFetching(false);
                         } catch (err) {
-                                console.error("Error fetching image:", err);
-                                // Em caso de erro, tentar usar a URL diretamente
+                                console.error("Error fetching image:", err?.response?.status || err.message);
                                 setBlobUrl(imageUrl);
                                 setFetching(false);
                                 setError(true);

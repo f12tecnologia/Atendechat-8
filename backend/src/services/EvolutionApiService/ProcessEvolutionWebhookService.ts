@@ -339,17 +339,113 @@ const ProcessEvolutionWebhookService = async (
       data = data.messages[0]; // Pegar primeira mensagem do array
     }
 
-    // Ignorar mensagens enviadas por nós
-    const fromMe = data.key?.fromMe || data.fromMe || false;
-    if (fromMe) {
-      logger.info(`[WEBHOOK] Skipping message from self`);
-      return;
-    }
-
     // Garantir que temos os dados da key
     if (!data.key) {
       logger.warn(`[WEBHOOK] No key data in webhook - data structure: ${JSON.stringify(Object.keys(data))}`);
       return;
+    }
+
+    // Verificar se é mensagem enviada por nós
+    const fromMe = data.key?.fromMe || data.fromMe || false;
+    
+    // Para mensagens fromMe de mídia, processamos em um caminho separado
+    // apenas para atualizar o mediaUrl da mensagem existente
+    if (fromMe) {
+      // Detectar mídia olhando para data.message.* (mais confiável que data.messageType)
+      const hasImage = !!data.message?.imageMessage;
+      const hasVideo = !!data.message?.videoMessage;
+      const hasAudio = !!data.message?.audioMessage;
+      const hasDocument = !!data.message?.documentMessage;
+      const hasMedia = hasImage || hasVideo || hasAudio || hasDocument;
+      
+      if (hasMedia) {
+        const mediaTypeForLog = hasImage ? "image" : hasVideo ? "video" : hasAudio ? "audio" : "document";
+        logger.info(`[WEBHOOK] Processing fromMe media message for update: ${mediaTypeForLog}, id=${data.key.id}`);
+        
+        // Buscar mensagem existente pelo ID
+        const existingMessage = await Message.findOne({
+          where: { id: data.key.id }
+        });
+
+        if (!existingMessage) {
+          logger.info(`[WEBHOOK] fromMe message not found in database, skipping: ${data.key.id}`);
+          return;
+        }
+
+        // Processar mídia do webhook e atualizar mediaUrl
+        let mediaUrl = "";
+        const instanceNameToUse = apiIntegration.instanceName || instance;
+
+        if (data.message?.imageMessage) {
+          const mimetype = data.message.imageMessage.mimetype || "image/jpeg";
+          const fileName = `${data.key.id}_${Date.now()}.${mimetype.split("/")[1] || "jpg"}`;
+          const savedFileName = await processMediaMessage(
+            data.message.imageMessage,
+            data.key.id,
+            fileName,
+            instanceNameToUse,
+            apiIntegration
+          );
+          if (savedFileName) mediaUrl = savedFileName;
+        } else if (data.message?.videoMessage) {
+          const mimetype = data.message.videoMessage.mimetype || "video/mp4";
+          const fileName = `${data.key.id}_${Date.now()}.${mimetype.split("/")[1] || "mp4"}`;
+          const savedFileName = await processMediaMessage(
+            data.message.videoMessage,
+            data.key.id,
+            fileName,
+            instanceNameToUse,
+            apiIntegration
+          );
+          if (savedFileName) mediaUrl = savedFileName;
+        } else if (data.message?.audioMessage) {
+          const mimetype = data.message.audioMessage.mimetype || "audio/ogg";
+          const ext = data.message.audioMessage.ptt ? "ogg" : (mimetype.split("/")[1] || "ogg");
+          const fileName = `${data.key.id}_${Date.now()}.${ext}`;
+          const savedFileName = await processMediaMessage(
+            data.message.audioMessage,
+            data.key.id,
+            fileName,
+            instanceNameToUse,
+            apiIntegration
+          );
+          if (savedFileName) mediaUrl = savedFileName;
+        } else if (data.message?.documentMessage) {
+          const originalName = data.message.documentMessage.fileName || "";
+          const fileName = originalName ? `${data.key.id}_${originalName}` : `${data.key.id}_${Date.now()}.pdf`;
+          const savedFileName = await processMediaMessage(
+            data.message.documentMessage,
+            data.key.id,
+            fileName,
+            instanceNameToUse,
+            apiIntegration
+          );
+          if (savedFileName) mediaUrl = savedFileName;
+        }
+
+        // Atualizar mensagem se conseguimos obter o mediaUrl
+        if (mediaUrl && mediaUrl !== existingMessage.mediaUrl) {
+          await existingMessage.update({ mediaUrl });
+          logger.info(`[WEBHOOK] Updated fromMe message mediaUrl: ${data.key.id} -> ${mediaUrl}`);
+          
+          // Emitir evento Socket.IO para atualizar frontend
+          const io = getIO();
+          io.to(`company-${companyId}-${existingMessage.ticketId.toString()}`).emit(
+            `company-${companyId}-appMessage`,
+            {
+              action: "update",
+              message: existingMessage.toJSON()
+            }
+          );
+        } else if (!mediaUrl) {
+          logger.info(`[WEBHOOK] Could not extract mediaUrl from fromMe webhook: ${data.key.id}`);
+        }
+
+        return;
+      } else {
+        logger.info(`[WEBHOOK] Skipping non-media message from self`);
+        return;
+      }
     }
 
     logger.info(`[WEBHOOK] Processing message: id=${data.key.id}, from=${data.key.remoteJid}`);
@@ -506,7 +602,7 @@ const ProcessEvolutionWebhookService = async (
       companyId
     });
 
-    // Verificar se mensagem já existe
+    // Verificar se mensagem já existe (evita duplicatas)
     const messageExists = await Message.count({
       where: { id: data.key.id, companyId }
     });
@@ -662,7 +758,7 @@ const ProcessEvolutionWebhookService = async (
       }
     }
 
-    // Criar mensagem
+    // Criar mensagem para mensagens recebidas (fromMe = false)
     // Salvar o remoteJidForReply para usar ao responder (pode ser remoteJidAlt ou remoteJid original)
     const messageData = {
       id: data.key.id,
