@@ -517,6 +517,9 @@ const MessagesList = ({ ticket, ticketId, isGroup }) => {
     // Para PDFs
     if (message.mediaType === "application/pdf" || message.mediaUrl?.toLowerCase().endsWith('.pdf')) {
       const pdfUrl = normalizeUrl(message.mediaUrl);
+      const isAbsoluteUrl = pdfUrl.startsWith('http://') || pdfUrl.startsWith('https://');
+      const fullUrl = isAbsoluteUrl ? pdfUrl : window.location.origin + pdfUrl;
+      const googleViewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(fullUrl)}&embedded=true`;
       const fileName = pdfUrl.split('/').pop() || 'documento.pdf';
 
       const handleDownload = (e) => {
@@ -534,7 +537,7 @@ const MessagesList = ({ ticket, ticketId, isGroup }) => {
         <>
           <div style={{ width: '100%', height: '400px', marginBottom: '8px' }}>
             <iframe
-              src={pdfUrl}
+              src={googleViewerUrl}
               style={{ width: '100%', height: '100%', border: 'none' }}
               title="PDF Viewer"
             />
