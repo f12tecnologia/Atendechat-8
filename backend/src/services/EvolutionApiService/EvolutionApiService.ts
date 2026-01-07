@@ -13,6 +13,8 @@ interface CreateInstanceRequest {
   qrcode?: boolean;
   webhookUrl?: string;
   webhookEvents?: string[];
+  webhookByEvents?: boolean;
+  webhookBase64?: boolean;
   integration?: "WHATSAPP-BAILEYS" | "WHATSAPP-BUSINESS";
   token?: string;
   number?: string;
@@ -87,8 +89,8 @@ class EvolutionApiService {
         payload.webhook = {
           enabled: true,
           url: data.webhookUrl,
-          webhookByEvents: false,
-          webhookBase64: true,
+          webhookByEvents: data.webhookByEvents !== undefined ? data.webhookByEvents : true,
+          webhookBase64: data.webhookBase64 !== undefined ? data.webhookBase64 : true,
           events: data.webhookEvents || [
             "QRCODE_UPDATED",
             "CONNECTION_UPDATE",
@@ -97,6 +99,7 @@ class EvolutionApiService {
             "SEND_MESSAGE"
           ]
         };
+        logger.info(`Evolution API - Webhook config: webhookByEvents=${payload.webhook.webhookByEvents}, webhookBase64=${payload.webhook.webhookBase64}`);
       }
 
       logger.info(`Evolution API - Creating instance: ${data.instanceName} (type: ${payload.integration})`, { 
@@ -362,6 +365,39 @@ class EvolutionApiService {
     } catch (error: any) {
       logger.warn(`Evolution API - Error fetching base64 for message ${messageId}:`, error.message);
       return null;
+    }
+  }
+
+  async setWebhook(
+    instanceName: string,
+    webhookUrl: string,
+    webhookEvents: string[] = ["MESSAGES_UPSERT", "CONNECTION_UPDATE", "MESSAGES_UPDATE", "SEND_MESSAGE"]
+  ): Promise<any> {
+    try {
+      const payload = {
+        webhook: {
+          enabled: true,
+          url: webhookUrl,
+          webhookByEvents: true,
+          webhookBase64: true,
+          events: webhookEvents
+        }
+      };
+
+      logger.info(`Evolution API - Setting webhook for ${instanceName}: ${webhookUrl}`);
+      logger.info(`Evolution API - Webhook events: ${webhookEvents.join(", ")}`);
+      logger.info(`Evolution API - webhookBase64: true, webhookByEvents: true`);
+
+      const response = await this.client.put(
+        `/webhook/set/${instanceName}`,
+        payload
+      );
+
+      logger.info(`Evolution API - Webhook set successfully for ${instanceName}`);
+      return response.data;
+    } catch (error: any) {
+      logger.error(`Evolution API - Error setting webhook for ${instanceName}:`, error.message);
+      throw new AppError("ERR_EVOLUTION_API_SET_WEBHOOK");
     }
   }
 

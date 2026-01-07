@@ -9,6 +9,9 @@ import DeleteWhatsAppService from "../services/WhatsappService/DeleteWhatsAppSer
 import ListWhatsAppsService from "../services/WhatsappService/ListWhatsAppsService";
 import ShowWhatsAppService from "../services/WhatsappService/ShowWhatsAppService";
 import UpdateWhatsAppService from "../services/WhatsappService/UpdateWhatsAppService";
+import EvolutionApiService from "../services/EvolutionApiService/EvolutionApiService";
+import ApiIntegration from "../models/ApiIntegration";
+import { logger } from "../utils/logger";
 
 interface WhatsappData {
   name: string;
@@ -222,4 +225,67 @@ export const remove = async (
   });
 
   return res.status(200).json({ message: "Whatsapp deleted." });
+};
+
+export const reconfigureWebhook = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const { whatsappId } = req.params;
+  const { companyId } = req.user;
+
+  try {
+    const whatsapp = await ShowWhatsAppService(whatsappId, companyId);
+
+    if (!whatsapp) {
+      return res.status(404).json({ error: "ERR_WHATSAPP_NOT_FOUND" });
+    }
+
+    if (whatsapp.provider !== "evolution") {
+      return res.status(400).json({ error: "ERR_NOT_EVOLUTION_CONNECTION" });
+    }
+
+    if (!whatsapp.apiIntegrationId) {
+      return res.status(400).json({ error: "ERR_NO_API_INTEGRATION" });
+    }
+
+    const apiIntegration = await ApiIntegration.findOne({
+      where: { id: whatsapp.apiIntegrationId, companyId }
+    });
+
+    if (!apiIntegration) {
+      return res.status(404).json({ error: "ERR_API_INTEGRATION_NOT_FOUND" });
+    }
+
+    const evolutionService = new EvolutionApiService({
+      baseUrl: apiIntegration.baseUrl,
+      apiKey: apiIntegration.apiKey
+    });
+
+    const instanceName = whatsapp.session || whatsapp.name.toLowerCase().replace(/[^a-z0-9]/g, "_");
+
+    const BACKEND_URL = process.env.REPLIT_DEV_DOMAIN
+      ? `https://${process.env.REPLIT_DEV_DOMAIN}`
+      : (process.env.BACKEND_URL || "http://localhost:5000");
+
+    const webhookUrl = `${BACKEND_URL}/api-integrations/webhook/${companyId}`;
+
+    logger.info(`[reconfigureWebhook] Reconfiguring webhook for ${instanceName}`);
+    logger.info(`[reconfigureWebhook] Webhook URL: ${webhookUrl}`);
+
+    await evolutionService.setWebhook(instanceName, webhookUrl);
+
+    return res.status(200).json({ 
+      message: "Webhook reconfigured successfully",
+      instanceName,
+      webhookUrl,
+      webhookBase64: true
+    });
+  } catch (error: any) {
+    logger.error(`[reconfigureWebhook] Error: ${error.message}`);
+    return res.status(500).json({ 
+      error: "ERR_RECONFIGURE_WEBHOOK",
+      message: error.message 
+    });
+  }
 };

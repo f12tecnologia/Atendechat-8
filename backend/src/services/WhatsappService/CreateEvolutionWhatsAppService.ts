@@ -180,7 +180,9 @@ const CreateEvolutionWhatsAppService = async ({
         instanceName,
         qrcode: connectionType !== "cloudapi",
         webhookUrl,
-        webhookEvents
+        webhookEvents,
+        webhookByEvents: true,
+        webhookBase64: true
       };
 
       if (connectionType === "cloudapi") {

@@ -21,4 +21,10 @@ whatsappRoutes.delete(
   WhatsAppController.remove
 );
 
+whatsappRoutes.post(
+  "/whatsapp/:whatsappId/reconfigure-webhook",
+  isAuth,
+  WhatsAppController.reconfigureWebhook
+);
+
 export default whatsappRoutes;
