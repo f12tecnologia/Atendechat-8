@@ -468,12 +468,9 @@ const MessagesList = ({ ticket, ticketId, isGroup }) => {
         message.mediaType?.startsWith('image/') || 
         (fileExtension && imageExtensions.includes(fileExtension))) {
       const imageUrl = normalizeUrl(message.mediaUrl);
-      // Construir URL completa para a mídia
-      const mediaUrl = imageUrl.startsWith('http')
-        ? imageUrl
-        : `${process.env.REACT_APP_BACKEND_URL || window.location.origin}${imageUrl}`;
-      
-      return <ModalImageCors imageUrl={mediaUrl} />;
+      // Usar URL relativa para arquivos locais (começa com /public/)
+      // ModalImageCors já trata corretamente URLs relativas e absolutas
+      return <ModalImageCors imageUrl={imageUrl} />;
     }
 
     // Para vídeos

@@ -260,6 +260,9 @@ class EvolutionApiService {
 
   async sendMediaMessage(data: SendMediaMessageRequest): Promise<any> {
     try {
+      logger.info(`Evolution API - Sending ${data.mediatype} to ${data.number} via instance ${data.instanceName}`);
+      logger.info(`Evolution API - Media base64 length: ${data.media?.length || 0} chars`);
+      
       const response = await this.client.post(
         `/message/sendMedia/${data.instanceName}`,
         {
@@ -275,11 +278,17 @@ class EvolutionApiService {
       return response.data;
     } catch (error: any) {
       const status = error?.response?.status;
+      const errorData = error?.response?.data;
       
       logger.error("Evolution API - Error sending media message:", {
         status,
+        statusText: error?.response?.statusText,
         message: error?.message,
-        instanceName: data.instanceName
+        errorData: JSON.stringify(errorData || {}),
+        instanceName: data.instanceName,
+        number: data.number,
+        mediatype: data.mediatype,
+        mediaLength: data.media?.length || 0
       });
       
       if (status === 404) {
@@ -288,6 +297,11 @@ class EvolutionApiService {
       
       if (status === 401) {
         throw new AppError(`Erro de autenticação na Evolution API. Verifique a API Key da instância ${data.instanceName}`, 401);
+      }
+
+      if (status === 400) {
+        const errorMsg = errorData?.message || errorData?.error || "Erro ao enviar mídia";
+        throw new AppError(`Erro ao enviar mídia: ${errorMsg}`, 400);
       }
       
       throw new AppError("ERR_EVOLUTION_API_SEND_MEDIA", status || 400);

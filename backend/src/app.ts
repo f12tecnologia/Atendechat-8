@@ -50,7 +50,21 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', message: 'Server is running' });
 });
 
-app.use("/public", express.static(uploadConfig.directory));
+// Rota /public com CORS explícito para arquivos de mídia
+app.use("/public", (req: Request, res: Response, next: NextFunction) => {
+  // Adicionar headers CORS para todos os arquivos estáticos
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept');
+  res.setHeader('Access-Control-Expose-Headers', 'Content-Range, X-Content-Range');
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  
+  next();
+}, express.static(uploadConfig.directory));
 
 // Serve frontend build if it exists
 const frontendBuildPath = path.join(__dirname, "..", "..", "frontend", "build");
